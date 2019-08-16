@@ -1,0 +1,35 @@
+# Block Pointer
+#
+# Copyright (c) 2011
+# Phil Bouchard
+#
+# Distributed under the Boost Software License, Version 1.0. (See
+# accompanying file LICENSE_1_0.txt or copy at
+# http://www.boost.org/LICENSE_1_0.txt
+
+import testing ;
+
+if ! $(BOOST_ROOT)
+{
+    BOOST_ROOT = [ modules.peek : BOOST_ROOT ] ;
+}
+
+# bjam -V2 threading=multi target-os=cygwin threadapi=pthread variant=debug
+
+lib boost_thread : : <name>boost_thread ;
+lib boost_system : : <name>boost_system ;
+lib boost_unit_test_framework : : <name>boost_unit_test_framework ;
+
+project :
+    : requirements
+        <include>../include 
+        <include>$(BOOST_ROOT)
+        <library-path>/usr/local/lib
+        <dll-path>/usr/local/lib
+        <warnings>all
+;
+
+test-suite "root_ptr_tests" :
+    [ run root_ptr_test1.cpp boost_thread boost_system boost_unit_test_framework ]
+    [ run root_ptr_test3.cpp boost_thread boost_system boost_unit_test_framework ]
+    ;
