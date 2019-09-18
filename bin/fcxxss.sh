@@ -14,9 +14,8 @@ usage()
     echo "Fornux C++ Superset Source-to-Source Compiler 2.7"
 }
 
-RM=rm
-CCFLAGS="-Wno-shadow -Wno-unused-parameter -Wno-unused-value -Wno-missing-prototypes -Wno-format-security -Wno-extern-initializer -Wno-gcc-compat -Wno-null-dereference -DBOOST_ERROR_CODE_HEADER_ONLY"
-LDFLAGS="-lstdc++"
+FCXXSS_CCFLAGS="-Wno-shadow -Wno-unused-parameter -Wno-unused-value -Wno-missing-prototypes -Wno-format-security -Wno-extern-initializer -Wno-gcc-compat -Wno-null-dereference -DBOOST_ERROR_CODE_HEADER_ONLY"
+FCXXSS_LDFLAGS="-lstdc++"
 
 GETOPT=$(getopt -a -o vcSEwCsI:L:D:U:o:f:W::m:g::O::x:d:l:B:b:V: -l username:,compiler:,linker:,pipe,ansi,std:,traditional,traditional-cpp,pedantic,pedantic-errors,nostartfiles,nodefaultlibs,nostdlib,pie,rdynamic,static,static-libgcc,static-libstdc++,shared,shared-libgcc,symbolic,threads,pthreads,pthread,version,param:,idirafter:,include:,isystem:,c-isystem:,cxx-isystem:,imacros:,iprefix:,iwithprefix:,iwithprefixbefore:,isystem:,imultilib:,isysroot:,iquote:,specs:,sysroot:,param:,soname:,Xpreprocessor:,Xassembler:,Xlinker:,M,MM,MF:,MG,MP,MT:,MQ:,MD,MMD -n $0 -- "$@")
 
@@ -126,17 +125,17 @@ if [[ ! -z "$@" ]]; then
     esac
 
     if [[ ! -z "$STD" ]]; then
-        if [[ -z "$CC" ]]; then
+        if [[ -z "$FCXXSS_CC" ]]; then
             (>&2 echo "$0: compiler not set")
             exit 1
         fi
 
-        if [[ -z "$USERNAME" ]]; then
+        if [[ -z "$FCXXSS_USERNAME" ]]; then
             (>&2 echo "$0: username not set")
             exit 1
         fi
 
-        if $CC -dM -E -x c /dev/null | grep __clang__ > /dev/null; then
+        if $FCXXSS_CC -dM -E -x c /dev/null | grep __clang__ > /dev/null; then
             PCH_INCLUDE=-include-pch
             PCH_HEADER=fcxxss$DEBUG.h.pch
             PCH_SHEADER=fcxxss$DEBUG.h.pch
@@ -156,7 +155,7 @@ if [[ ! -z "$@" ]]; then
             mkdir -p $TEMPDIR/$TEMPLOCK/$(dirname $TEMPFILE)
             
             if [[ ! -f $TEMPDIR/$TEMPLOCK/$PCH_HEADER ]]; then
-                $CC -xc++-header -std=c++11 $OPT $CCFLAGS -I $ROOTDIR/include $ROOTDIR/include/fcxxss.h -o $TEMPDIR/$TEMPLOCK/$PCH_HEADER
+                $FCXXSS_CC -xc++-header -std=c++11 $OPT $FCXXSS_CCFLAGS -I $ROOTDIR/include $ROOTDIR/include/fcxxss.h -o $TEMPDIR/$TEMPLOCK/$PCH_HEADER
             fi
 
             if [[ ! -z "$COMPILE" ]] && [[ -z "$OUTPUT" ]]; then
@@ -165,9 +164,9 @@ if [[ ! -z "$@" ]]; then
         ) 200>/var/lock/$TEMPLOCK.fcxxss.lock
         
         ## IMPORTANT NOTE:
-        # The following client portion: "ssh $USERNAME@fcxxss.fornux.com -- $STD $ISYSTEM" 
+        # The following client portion: "ssh $FCXXSS_USERNAME@fcxxss.fornux.com -- $STD $ISYSTEM" 
         # is replaced on the server by: "fcxxss -ast-print /dev/stdin -- $STD $ISYSTEM"
-        if $CC $STD $DEFINE $INCLUDE $ISYSTEM -E $@ | ssh $USERNAME@fcxxss.fornux.com -- $STD $ISYSTEM > $TEMPDIR/$TEMPLOCK/$TEMPFILE && $CC -xc++ -std=c++11 $DEFINE $INCLUDE $ISYSTEM $PCH_INCLUDE $TEMPDIR/$TEMPLOCK/$PCH_SHEADER $OPT $TEMPDIR/$TEMPLOCK/$TEMPFILE $COMPILE $OUTPUT $PPOUTPUT $LIBRARY $CCFLAGS $LDFLAGS; then
+        if $FCXXSS_CC $STD $DEFINE $INCLUDE $ISYSTEM -E $@ | ssh $FCXXSS_USERNAME@fcxxss.fornux.com -- $STD $ISYSTEM > $TEMPDIR/$TEMPLOCK/$TEMPFILE && $FCXXSS_CC -xc++ -std=c++11 $DEFINE $INCLUDE $ISYSTEM $PCH_INCLUDE $TEMPDIR/$TEMPLOCK/$PCH_SHEADER $OPT $TEMPDIR/$TEMPLOCK/$TEMPFILE $COMPILE $OUTPUT $PPOUTPUT $LIBRARY $FCXXSS_CCFLAGS $FCXXSS_LDFLAGS; then
             #rm $TEMPDIR/$TEMPLOCK/$TEMPFILE
             exit 0
         else
@@ -175,18 +174,18 @@ if [[ ! -z "$@" ]]; then
             exit 1
         fi
     else
-        if [[ -z "$LD" ]]; then
+        if [[ -z "$FCXXSS_LD" ]]; then
             (>&2 echo "$0: linker not set")
             exit 1
         fi
 
-        $LD $OPT $@ $LIBRARY $LDFLAGS $OUTPUT
+        $FCXXSS_LD $OPT $@ $LIBRARY $FCXXSS_LDFLAGS $OUTPUT
     fi
 else
-    if [[ -z "$CC" ]]; then
+    if [[ -z "$FCXXSS_CC" ]]; then
         (>&2 echo "$0: compiler not set")
         exit 1
     fi
 
-    $CC $OPT $LIBRARY
+    $FCXXSS_CC $OPT $LIBRARY
 fi
