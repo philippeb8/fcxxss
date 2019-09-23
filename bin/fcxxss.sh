@@ -14,8 +14,8 @@ usage()
     echo "Fornux C++ Superset Source-to-Source Compiler 2.7"
 }
 
-FCXXSS_CCFLAGS="-Wno-shadow -Wno-unused-parameter -Wno-unused-value -Wno-missing-prototypes -Wno-format-security -Wno-extern-initializer -Wno-gcc-compat -Wno-null-dereference -DBOOST_ERROR_CODE_HEADER_ONLY"
-FCXXSS_LDFLAGS="-lstdc++"
+CCFLAGS="-Wno-shadow -Wno-unused-parameter -Wno-unused-value -Wno-missing-prototypes -Wno-format-security -Wno-extern-initializer -Wno-gcc-compat -Wno-null-dereference -DBOOST_ERROR_CODE_HEADER_ONLY"
+LDFLAGS="-lstdc++"
 
 GETOPT=$(getopt -a -o vcSEwCsI:L:D:U:o:f:W::m:g::O::x:d:l:B:b:V: -l username:,compiler:,linker:,pipe,ansi,std:,traditional,traditional-cpp,pedantic,pedantic-errors,nostartfiles,nodefaultlibs,nostdlib,pie,rdynamic,static,static-libgcc,static-libstdc++,shared,shared-libgcc,symbolic,threads,pthreads,pthread,version,param:,idirafter:,include:,isystem:,c-isystem:,cxx-isystem:,imacros:,iprefix:,iwithprefix:,iwithprefixbefore:,isystem:,imultilib:,isysroot:,iquote:,specs:,sysroot:,param:,soname:,Xpreprocessor:,Xassembler:,Xlinker:,M,MM,MF:,MG,MP,MT:,MQ:,MD,MMD -n $0 -- "$@")
 
@@ -61,7 +61,7 @@ while true ; do
         --nodefaultlibs) OPT+="$1 " ; shift 1 ;;
         --nostdlib) OPT+="$1 " ; shift 1 ;;
         --pie) OPT+="$1 " ; shift 1 ;;
-        --rdynamic) OPT+="$1 " ; shift 1 ;;
+        --rdynamic) OPT+="-rdynamic " ; shift 1 ;;
         --static) OPT+="$1 " ; shift 1 ;;
         --static-libgcc) OPT+="$1 " ; shift 1 ;;
         --static-libstdc++) OPT+="$1 " ; shift 1 ;;
@@ -155,7 +155,7 @@ if [[ ! -z "$@" ]]; then
             mkdir -p $TEMPDIR/$TEMPLOCK/$(dirname $TEMPFILE)
             
             if [[ ! -f $TEMPDIR/$TEMPLOCK/$PCH_HEADER ]]; then
-                $FCXXSS_CC -xc++-header -std=c++11 $OPT $FCXXSS_CCFLAGS -I $ROOTDIR/include $ROOTDIR/include/fcxxss.h -o $TEMPDIR/$TEMPLOCK/$PCH_HEADER
+                $FCXXSS_CC -xc++-header -std=c++11 $DEFINE $OPT $CCFLAGS -I $ROOTDIR/include $ROOTDIR/include/fcxxss.h -o $TEMPDIR/$TEMPLOCK/$PCH_HEADER
             fi
 
             if [[ ! -z "$COMPILE" ]] && [[ -z "$OUTPUT" ]]; then
@@ -166,7 +166,7 @@ if [[ ! -z "$@" ]]; then
         ## IMPORTANT NOTE:
         # The following client portion: "ssh $FCXXSS_USERNAME@fcxxss.fornux.com -- $STD $ISYSTEM" 
         # is replaced on the server by: "fcxxss -ast-print /dev/stdin -- $STD $ISYSTEM"
-        if $FCXXSS_CC $STD $DEFINE $INCLUDE $ISYSTEM -E $@ | ssh $FCXXSS_USERNAME@fcxxss.fornux.com -- $STD $ISYSTEM > $TEMPDIR/$TEMPLOCK/$TEMPFILE && $FCXXSS_CC -xc++ -std=c++11 $DEFINE $INCLUDE $ISYSTEM $PCH_INCLUDE $TEMPDIR/$TEMPLOCK/$PCH_SHEADER $OPT $TEMPDIR/$TEMPLOCK/$TEMPFILE $COMPILE $OUTPUT $PPOUTPUT $LIBRARY $FCXXSS_CCFLAGS $FCXXSS_LDFLAGS; then
+        if $FCXXSS_CC $STD $DEFINE $INCLUDE $ISYSTEM -E $@ | ssh $FCXXSS_USERNAME@fcxxss.fornux.com -- $STD $ISYSTEM > $TEMPDIR/$TEMPLOCK/$TEMPFILE && $FCXXSS_CC -xc++ -std=c++11 $DEFINE $INCLUDE $ISYSTEM $OPT $CCFLAGS $PCH_INCLUDE $TEMPDIR/$TEMPLOCK/$PCH_SHEADER $TEMPDIR/$TEMPLOCK/$TEMPFILE $COMPILE $OUTPUT $PPOUTPUT $LIBRARY $LDFLAGS; then
             #rm $TEMPDIR/$TEMPLOCK/$TEMPFILE
             exit 0
         else
@@ -179,7 +179,7 @@ if [[ ! -z "$@" ]]; then
             exit 1
         fi
 
-        $FCXXSS_LD $OPT $@ $LIBRARY $FCXXSS_LDFLAGS $OUTPUT
+        $FCXXSS_LD $OPT $@ $LIBRARY $LDFLAGS $OUTPUT
     fi
 else
     if [[ -z "$FCXXSS_CC" ]]; then

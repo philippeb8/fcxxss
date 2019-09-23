@@ -105,8 +105,31 @@ test * foo()
     return (test *) 0;
 }
 
+namespace Dummy
+{
+template <typename T>
+    struct Value
+    {
+        typedef T value;
+    };
+    
+    struct Funny
+    {
+        Funny(int, int) {}
+    };
+
+template <typename T>
+    struct Dummy
+    {
+        Dummy(T, T) {}
+    };
+}
+
 int main(int argc, char * argv_[])
 {
+    Dummy::Funny(8, 8);
+    Dummy::Dummy<typename Dummy::Value<int>::value>(9, 9);
+    
     // Transfering 2D external buffers into internal buffers:
     char ** argv = new char *[argc];
     
