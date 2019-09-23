@@ -126,6 +126,16 @@ public:
 
 
     /**
+        Function-style access.
+    */
+    
+    node_proxy const & operator () () const
+    {
+        return * this;
+    }
+    
+    
+    /**
         Destruction of a single @c node_proxy and detaching itself from other @c node_proxy .
     */
 
@@ -200,8 +210,8 @@ public:
     stack_node_proxy() : node_proxy(++ static_depth())
     {
     }
-
-
+    
+    
     /**
         Destruction of a single @c node_proxy and detaching itself from other @c node_proxy .
     */
@@ -713,7 +723,7 @@ template <>
             {
             }
 
-        char const * const name() const
+        char const * name() const
         {
             return pn_;
         }
@@ -910,7 +920,7 @@ template <typename T>
             {
             }
             
-        char const * const name() const
+        char const * name() const
         {
             return pn_;
         }

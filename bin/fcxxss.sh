@@ -14,7 +14,7 @@ usage()
     echo "Fornux C++ Superset Source-to-Source Compiler 2.7"
 }
 
-CCFLAGS="-Wno-shadow -Wno-unused-parameter -Wno-unused-value -Wno-missing-prototypes -Wno-format-security -Wno-extern-initializer -Wno-gcc-compat -Wno-null-dereference -DBOOST_ERROR_CODE_HEADER_ONLY"
+CCFLAGS="-Wno-shadow -Wno-unused-parameter -Wno-unused-value -Wno-missing-prototypes -Wno-format-security -Wno-extern-initializer -Wno-gcc-compat -Wno-null-dereference -Wno-exit-time-destructors -Wno-unused-command-line-argument -Wno-global-constructors -DBOOST_ERROR_CODE_HEADER_ONLY"
 LDFLAGS="-lstdc++"
 
 GETOPT=$(getopt -a -o vcSEwCsI:L:D:U:o:f:W::m:g::O::x:d:l:B:b:V: -l username:,compiler:,linker:,pipe,ansi,std:,traditional,traditional-cpp,pedantic,pedantic-errors,nostartfiles,nodefaultlibs,nostdlib,pie,rdynamic,static,static-libgcc,static-libstdc++,shared,shared-libgcc,symbolic,threads,pthreads,pthread,version,param:,idirafter:,include:,isystem:,c-isystem:,cxx-isystem:,imacros:,iprefix:,iwithprefix:,iwithprefixbefore:,isystem:,imultilib:,isysroot:,iquote:,specs:,sysroot:,param:,soname:,Xpreprocessor:,Xassembler:,Xlinker:,M,MM,MF:,MG,MP,MT:,MQ:,MD,MMD -n $0 -- "$@")
@@ -28,7 +28,7 @@ while true ; do
         -v) OPT+="$1 " ; shift 1 ;;
         -c) COMPILE+="$1 " ; shift 1 ;;
         -S) OPT+="$1 " ; shift 1 ;;
-        -E) OPT+="$1 " ; shift 1 ;;
+        -E) OPT+="$1 -I $ROOTDIR/include "; shift 1 ;;
         -w) OPT+="$1 " ; shift 1 ;;
         -C) OPT+="$1 " ; shift 1 ;;
         -s) OPT+="$1 " ; shift 1 ;;
@@ -48,9 +48,6 @@ while true ; do
         -B) OPT+="$1$2 " ; shift 2 ;;
         -b) OPT+="$1$2 " ; shift 2 ;;
         -V) OPT+="$1$2 " ; shift 2 ;;
-        --username) USERNAME=$2 ; shift 2 ;;
-        --compiler) CC=$2 ; shift 2 ;;
-        --linker) LD=$2 ; shift 2 ;;
         --pipe) OPT+="$1 " ; shift 1 ;;
         --ansi) OPT+="$1 " ; shift 1 ;;
         --traditional) OPT+="$1 " ; shift 1 ;;
