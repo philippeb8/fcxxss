@@ -31,7 +31,7 @@ extern "C++"
 namespace fcxxss
 {
     
-inline boost::root_ptr<std::vector<char>> strdup(boost::node_proxy const & __y, boost::root_ptr<std::vector<char>> p)
+inline boost::root_ptr<std::vector<char>> strdup(boost::node_proxy & __y, boost::root_ptr<std::vector<char>> p)
 {
     if (p)
         return boost::root_ptr<std::vector<char>>(__y, "", new boost::node<std::vector<char>>(static_cast<char *>(p), static_cast<char *>(p) + ::strlen(p) + 1));
@@ -39,7 +39,7 @@ inline boost::root_ptr<std::vector<char>> strdup(boost::node_proxy const & __y, 
         throw std::out_of_range(std::string("\"") + p.name() + "\" null pointer");
 }
 
-inline boost::root_ptr<std::vector<char>> strndup(boost::node_proxy const & __y, boost::root_ptr<std::vector<char>> p, std::size_t s)
+inline boost::root_ptr<std::vector<char>> strndup(boost::node_proxy & __y, boost::root_ptr<std::vector<char>> p, std::size_t s)
 {
     if (p)
         return boost::root_ptr<std::vector<char>>(__y, "", new boost::node<std::vector<char>>(static_cast<char *>(p), static_cast<char *>(p) + std::min(::strlen(p) + 1, s)));
@@ -48,7 +48,7 @@ inline boost::root_ptr<std::vector<char>> strndup(boost::node_proxy const & __y,
 }
 
 template <typename... Args>
-    inline int asprintf(boost::node_proxy const & __y, boost::root_ptr<std::vector<boost::root_ptr<std::vector<char>>>> strp, boost::root_ptr<std::vector<char>> fmt, Args &&... args)
+    inline int asprintf(boost::node_proxy & __y, boost::root_ptr<std::vector<boost::root_ptr<std::vector<char>>>> strp, boost::root_ptr<std::vector<char>> fmt, Args &&... args)
     {
         std::string s = tfm::format(fmt, args...) + '\0';
         
@@ -57,7 +57,7 @@ template <typename... Args>
         return s.size() - 1;
     }
     
-inline boost::root_ptr<std::vector<char>> memcpy(boost::node_proxy const & __y, boost::root_ptr<std::vector<char>> d, boost::root_ptr<std::vector<char>> const s, size_t n)
+inline boost::root_ptr<std::vector<char>> memcpy(boost::node_proxy & __y, boost::root_ptr<std::vector<char>> d, boost::root_ptr<std::vector<char>> const s, size_t n)
 {
     if (d < s)
     {
@@ -91,7 +91,7 @@ inline boost::root_ptr<std::vector<char>> memcpy(boost::node_proxy const & __y, 
     return d;
 }
     
-inline boost::root_ptr<std::vector<char>> memset(boost::node_proxy const & __y, boost::root_ptr<std::vector<char>> d, char const v, size_t n)
+inline boost::root_ptr<std::vector<char>> memset(boost::node_proxy & __y, boost::root_ptr<std::vector<char>> d, char const v, size_t n)
 {
     char * q = static_cast<char *>(d);
     
