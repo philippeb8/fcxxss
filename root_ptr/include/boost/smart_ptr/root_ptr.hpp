@@ -236,11 +236,6 @@ BOOST_TTI_HAS_STATIC_MEMBER_FUNCTION(__proxy)
 template <typename T, bool = has_static_member_function___proxy<T, T const & (node_proxy &, T const &)>::value>
     struct proxy
     {
-        inline T & operator () (node_proxy & __y, T & po) const
-        { 
-            return po; 
-        }
-        
         inline T const & operator () (node_proxy & __y, T const & po) const
         { 
             return po; 
@@ -257,27 +252,11 @@ template <typename T, size_t S>
             
             return po;
         }
-        
-        inline T const (& operator () (node_proxy & __y, T const (& po)[S]) const)[S]
-        {
-            for (T const * i = po; i != po + S; ++ i)
-                proxy<T>()(__y, * i);
-            
-            return po;
-        }
     };
 
 template <typename T>
     struct proxy<std::vector<T>, false>
     {
-        inline std::vector<T> & operator () (node_proxy & __y, std::vector<T> & po) const
-        {
-            for (typename std::vector<T>::const_iterator i = po.begin(); i != po.end(); ++ i)
-                proxy<T>()(__y, * i);
-            
-            return po;
-        }
-        
         inline std::vector<T> const & operator () (node_proxy & __y, std::vector<T> const & po) const
         {
             for (typename std::vector<T>::const_iterator i = po.begin(); i != po.end(); ++ i)
@@ -290,11 +269,6 @@ template <typename T>
 template <>
     struct proxy<std::vector<void>, false>
     {
-        inline std::vector<void> & operator () (node_proxy & __y, std::vector<void> & po) const
-        {
-            return po;
-        }
-        
         inline std::vector<void> const & operator () (node_proxy & __y, std::vector<void> const & po) const
         {
             return po;
@@ -304,16 +278,9 @@ template <>
 template <typename T>
     struct proxy<root_ptr<T>, false>
     {
-        inline root_ptr<T> & operator () (node_proxy & x, root_ptr<T> & po) const
-        {
-            po.proxy(x);
-            
-            return po;
-        }
-        
         inline root_ptr<T> const & operator () (node_proxy & x, root_ptr<T> const & po) const
         {
-            po.proxy(x);
+            const_cast<root_ptr<T> &>(po).proxy(x);
             
             return po;
         }
@@ -322,16 +289,9 @@ template <typename T>
 template <typename T, size_t S>
     struct proxy<root_array<T, S>, false>
     {
-        inline root_array<T, S> & operator () (node_proxy & x, root_array<T, S> & po) const
-        {
-            po.proxy(x);
-            
-            return po;
-        }
-        
         inline root_array<T, S> const & operator () (node_proxy & x, root_array<T, S> const & po) const
         {
-            po.proxy(x);
+            const_cast<root_array<T, S> &>(po).proxy(x);
             
             return po;
         }
@@ -340,16 +300,9 @@ template <typename T, size_t S>
 template <typename T>
     struct proxy<T, true>
     {
-        inline T & operator () (node_proxy & __y, T & po) const
-        { 
-            T::__proxy(__y, po);
-            
-            return po;
-        }
-        
         inline T const & operator () (node_proxy & __y, T const & po) const
         { 
-            T::__proxy(__y, po);
+            T::__proxy(__y, const_cast<T &>(po));
             
             return po;
         }
@@ -358,9 +311,9 @@ template <typename T>
 template <typename T>
     inline T & make_proxy(node_proxy & __y, T & po)
     {
-        return proxy<T>()(__y, po);
+        return const_cast<T &>(proxy<T>()(__y, po));
     }
-    
+
 template <typename T>
     inline T const & make_proxy(node_proxy & __y, T const & po)
     {
@@ -524,7 +477,7 @@ template <typename T>
             @param  p New pointer to manage.
         */
 
-        node_ptr & operator = (node_ptr<T> const & p)
+        node_ptr & operator = (node_ptr<T> & p)
         {
             return operator = <T>(p);
         }
@@ -558,7 +511,7 @@ template <typename T>
         */
 
         template <typename V>
-            node_ptr & operator = (node_ptr<V> const & p)
+            node_ptr & operator = (node_ptr<V> & p)
             {
 #ifndef BOOST_DISABLE_THREADS
                 mutex::scoped_lock scoped_lock(node_proxy::static_mutex());
@@ -583,7 +536,7 @@ template <typename T>
         */
 
         template <typename V>
-            void reset(node_ptr<V> const & p)
+            void reset(node_ptr<V> & p)
             {
                 operator = <T>(p);
             }
@@ -630,7 +583,7 @@ template <typename T>
             Sets associated proxy for the entire branch of this pointer.
         */
         
-        void proxy(node_proxy & x) const
+        void proxy(node_proxy & x)
         {
             if (x.depth() < px_->depth())
             {
@@ -796,7 +749,7 @@ template <>
                 return * this;
             }
 
-            root_ptr & operator = (root_ptr const & p)
+            root_ptr & operator = (root_ptr & p)
             {
                 pi_ = p.pi_;
                 
@@ -804,7 +757,7 @@ template <>
             }
 
         template <typename V>
-            root_ptr & operator = (root_ptr<std::vector<V>> const & p)
+            root_ptr & operator = (root_ptr<std::vector<V>> & p)
             {
                 pi_ = p.pi_;
                 
@@ -1001,7 +954,7 @@ template <typename T>
                 return static_cast<root_ptr &>(base::operator = (p));
             }
 
-            root_ptr & operator = (root_ptr const & p)
+            root_ptr & operator = (root_ptr & p)
             {
                 pi_ = p.pi_;
                 
@@ -1172,10 +1125,7 @@ template <typename T>
     };
 
 
-BOOST_TTI_HAS_STATIC_MEMBER_FUNCTION(__construct)
-
-
-template <typename T, bool = has_static_member_function___construct<T, T (node_proxy &, char const *, T const &)>::value>
+template <typename T, bool = has_static_member_function___proxy<T, T const & (node_proxy &, T const &)>::value>
     struct construct
     {
         template <typename... Args>
@@ -1211,8 +1161,18 @@ template <typename T>
         template <typename... Args>
             inline T operator () (node_proxy & __y, char const * n, Args &&... args) const
             {
-                return T::__construct(__y, n, std::forward<Args>(args)...);
+                return T(__y, std::forward<Args>(args)...);
             }
+
+        inline T operator () (node_proxy & __y, char const * n, T & po) const
+        {
+            return T(po);
+        }
+        
+        inline T operator () (node_proxy & __y, char const * n, T const & po) const
+        {
+            return T(po);
+        }
     };
     
 template <typename T>
