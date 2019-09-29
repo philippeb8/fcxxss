@@ -25,6 +25,7 @@
 #include <iostream>
 #include <iomanip>
 #include <list>
+#include <type_traits>
 
 
 using namespace std;
@@ -107,8 +108,26 @@ test * foo()
 
 namespace Dummy
 {
-template <typename T>
+template <bool>
+    struct Predicate
+    {
+        static bool constexpr value() { return false; }
+    };
+    
+template <>
+    struct Predicate<true>
+    {
+        static bool constexpr value() { return true; }
+    };
+    
+template <typename T, typename U = void>
     struct Value
+    {
+        typedef T value;
+    };
+    
+template <typename T>
+    struct Value<T, typename std::enable_if<Predicate<true>::value(), int>::type>
     {
         typedef T value;
     };
@@ -198,7 +217,7 @@ int main(int argc, char * argv_[])
     
     // Templates:
     Dummy::Funny(8, 8);
-    Dummy::Dummy<Dummy::Value<int>::value>(9, 9);
+    Dummy::Dummy<typename Dummy::Value<int, int>::value>(9, 9);
     
     return 0;
 }
