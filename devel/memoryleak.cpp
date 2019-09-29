@@ -115,6 +115,8 @@ template <typename T>
     
     struct Funny
     {
+        typedef int value;
+
         Funny(int, int) {}
     };
 
@@ -122,14 +124,12 @@ template <typename T>
     struct Dummy
     {
         Dummy(T, T) {}
+        ~Dummy() {}
     };
 }
 
 int main(int argc, char * argv_[])
 {
-    Dummy::Funny(8, 8);
-    Dummy::Dummy<typename Dummy::Value<int>::value>(9, 9);
-    
     // Transfering 2D external buffers into internal buffers:
     char ** argv = new char *[argc];
     
@@ -195,6 +195,10 @@ int main(int argc, char * argv_[])
         cout << "\rSpeed: " << setprecision(11) << i * 1000.0 / (after - before).count() << " loops / s; Memory usage: " << r_usage.ru_maxrss << " kilobytes" << flush;
         usleep(1);
     }
+    
+    // Templates:
+    Dummy::Funny(8, 8);
+    Dummy::Dummy<Dummy::Value<int>::value>(9, 9);
     
     return 0;
 }
