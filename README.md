@@ -1,6 +1,6 @@
 *******************************************************************************
 
-Fornux C++ Superset 2.7
+Fornux C++ Superset 4.1
 
 Client side Fornux C++ Superset source-to-source compiler streaming functionality
 

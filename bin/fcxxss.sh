@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Fornux C++ Superset Source-to-Source Compiler 2.7
+# Fornux C++ Superset Source-to-Source Compiler 4.1
 #
 # Copyright (c) Fornux Inc. 2019
 #
@@ -11,7 +11,7 @@ usage()
 {
     echo "Usage: $0 [options] file"
     echo
-    echo "Fornux C++ Superset Source-to-Source Compiler 2.7"
+    echo "Fornux C++ Superset Source-to-Source Compiler 4.1"
 }
 
 CCFLAGS="-Wno-shadow -Wno-unused-parameter -Wno-unused-value -Wno-missing-prototypes -Wno-format-security -Wno-extern-initializer -Wno-gcc-compat -Wno-null-dereference -Wno-exit-time-destructors -Wno-unused-command-line-argument -DBOOST_ERROR_CODE_HEADER_ONLY"
@@ -36,7 +36,7 @@ while true ; do
         -L) OPT+="$1$2 " ; shift 2 ;;
         -D) DEFINE+="$1$2 " ; shift 2 ;;
         -U) OPT+="$1$2 " ; shift 2 ;;
-        -o) OUTPUT+="$1$2 " ; shift 2 ;;
+        -o) OUTPUT="$1$2" ; shift 2 ;;
         -f) OPT+="$1$2 " ; DEBUG+="$1$2" ; if [[ "$2" =~ ^openmp.* ]]; then OPENMP="$($FCXXSS_CC -fopenmp -dM -E - < /dev/null | grep -i _OPENMP | awk '{print $3;}')"; DEFINE+="-D_OPENMP=$OPENMP "; fi; shift 2 ;;
         -W) OPT+="$1$2 " ; shift 2 ;;
         -m) OPT+="$1$2 " ; shift 2 ;;
@@ -106,7 +106,7 @@ done
 #set -x
 
 if [[ ! -z "$@" ]]; then
-    case $(xdg-mime query filetype $@) in
+    case $(xdg-mime query filetype "$@") in
     "text/x-csrc")
         STD="-xc"
         ;;
@@ -142,32 +142,33 @@ if [[ ! -z "$@" ]]; then
             PCH_SHEADER=fcxxss$DEBUG.h
         fi
 
-        TEMPDIR="/tmp/fcxxss"
         TEMPLOCK="$(echo $(pwd) | md5sum | cut -d ' ' -f1)"
         TEMPFILE="$@.cxx"
+        TEMPDIR="/tmp/fcxxss/$TEMPLOCK"
+        TEMPSUBDIR=$(dirname "$TEMPFILE")
         
         (
             flock -s 200
 
-            mkdir -p $TEMPDIR/$TEMPLOCK/$(dirname $TEMPFILE)
+            mkdir -p "$TEMPDIR/$TEMPSUBDIR"
             
-            if [[ ! -f $TEMPDIR/$TEMPLOCK/$PCH_HEADER ]]; then
-                $FCXXSS_CC -xc++-header -std=c++11 $DEFINE $OPT $CCFLAGS -I $ROOTDIR/include $ROOTDIR/include/fcxxss.h -o $TEMPDIR/$TEMPLOCK/$PCH_HEADER
+            if [[ ! -f "$TEMPDIR/$PCH_HEADER" ]]; then
+                $FCXXSS_CC -xc++-header -std=c++11 $DEFINE $OPT $CCFLAGS -I "$ROOTDIR/include $ROOTDIR/include/fcxxss.h" -o "$TEMPDIR/$PCH_HEADER"
             fi
 
             if [[ ! -z "$COMPILE" ]] && [[ -z "$OUTPUT" ]]; then
                 OUTPUT+="-o $(echo $@ | sed 's/\..*$/.o/')"
             fi
-        ) 200>/var/lock/$TEMPLOCK.fcxxss.lock
+        ) 200>"/var/lock/$TEMPLOCK.fcxxss.lock"
         
         ## IMPORTANT NOTE:
         # The following client portion: "ssh $FCXXSS_USERNAME@fcxxss.fornux.com -- $STD $ISYSTEM" 
         # is replaced on the server by: "fcxxss -ast-print /dev/stdin -- $STD $ISYSTEM"
-        if $FCXXSS_CC $STD $DEFINE $INCLUDE $ISYSTEM -E $@ | ssh $FCXXSS_USERNAME@fcxxss.fornux.com -- $STD $ISYSTEM > $TEMPDIR/$TEMPLOCK/$TEMPFILE && $FCXXSS_CC -xc++ -std=c++11 $DEFINE $INCLUDE $ISYSTEM $OPT $CCFLAGS $PCH_INCLUDE $TEMPDIR/$TEMPLOCK/$PCH_SHEADER $TEMPDIR/$TEMPLOCK/$TEMPFILE $COMPILE $OUTPUT $PPOUTPUT $LIBRARY $LDFLAGS; then
-            #rm $TEMPDIR/$TEMPLOCK/$TEMPFILE
+        if $FCXXSS_CC $STD $DEFINE $INCLUDE $ISYSTEM -E "$@" | ssh $FCXXSS_USERNAME@fcxxss.fornux.com -- $STD $ISYSTEM > "$TEMPDIR/$TEMPFILE" && $FCXXSS_CC -xc++ -std=c++11 $DEFINE $INCLUDE $ISYSTEM $OPT $CCFLAGS $PCH_INCLUDE "$TEMPDIR/$PCH_SHEADER" "$TEMPDIR/$TEMPFILE" $COMPILE "$OUTPUT" $PPOUTPUT $LIBRARY $LDFLAGS; then
+            #rm "$TEMPDIR/$TEMPLOCK/$TEMPFILE"
             exit 0
         else
-            (>&2 echo "$0: intermediate file '$TEMPDIR/$TEMPLOCK/$TEMPFILE'")
+            (>&2 echo "$0: intermediate file '$TEMPDIR/$TEMPFILE'")
             exit 1
         fi
     else
@@ -176,7 +177,7 @@ if [[ ! -z "$@" ]]; then
             exit 1
         fi
 
-        $FCXXSS_LD $OPT $@ $LIBRARY $LDFLAGS $OUTPUT
+        $FCXXSS_LD $OPT "$@" $LIBRARY $LDFLAGS "$OUTPUT"
     fi
 else
     if [[ -z "$FCXXSS_CC" ]]; then
