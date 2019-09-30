@@ -1262,7 +1262,7 @@ template <typename T>
     };
 
 template <typename T, size_t S>
-    struct size_of_t<root_array<T, S>>
+    struct size_of_t<root_array<std::vector<T>, S>>
     {
         static size_t const value = sizeof(T) * S;
     };
@@ -1274,7 +1274,7 @@ template <typename T>
     }
 
 template <typename T, size_t S>
-    inline size_t size_of(root_array<T, S> const &)
+    inline size_t size_of(root_array<std::vector<T>, S> const &)
     {
         return sizeof(T) * S;
     }
