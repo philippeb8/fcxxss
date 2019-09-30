@@ -967,12 +967,20 @@ template <typename T>
         template <typename V>
             T & operator [] (V n)
             {
+                if (po_)
+                    if (pi_ + n < po_->data() || po_->data() + po_->size() <= pi_ + n)
+                        throw std::out_of_range(std::string("\"") + name() + "\" out of range");
+                
                 return * (pi_ + n); 
             }
 
         template <typename V>
             T const & operator [] (V n) const
             {
+                if (po_)
+                    if (pi_ + n < po_->data() || po_->data() + po_->size() <= pi_ + n)
+                        throw std::out_of_range(std::string("\"") + name() + "\" out of range");
+                
                 return * (pi_ + n); 
             }
 
