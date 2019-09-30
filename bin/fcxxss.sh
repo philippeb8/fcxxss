@@ -153,7 +153,7 @@ if [[ ! -z "$@" ]]; then
             mkdir -p "$TEMPDIR/$TEMPSUBDIR"
             
             if [[ ! -f "$TEMPDIR/$PCH_HEADER" ]]; then
-                $FCXXSS_CC -xc++-header -std=c++11 $DEFINE $OPT $CCFLAGS -I "$ROOTDIR/include $ROOTDIR/include/fcxxss.h" -o "$TEMPDIR/$PCH_HEADER"
+                $FCXXSS_CC -xc++-header -std=c++11 $DEFINE $OPT $CCFLAGS -I "$ROOTDIR/include" "$ROOTDIR/include/fcxxss.h" -o "$TEMPDIR/$PCH_HEADER"
             fi
 
             if [[ ! -z "$COMPILE" ]] && [[ -z "$OUTPUT" ]]; then
