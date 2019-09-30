@@ -22,6 +22,7 @@
 
 #include <vector>
 #include <utility>
+#include <sstream>
 #include <initializer_list>
 
 #ifndef BOOST_DISABLE_THREADS
@@ -969,7 +970,12 @@ template <typename T>
             {
                 if (po_)
                     if (pi_ + n < po_->data() || po_->data() + po_->size() <= pi_ + n)
-                        throw std::out_of_range(std::string("\"") + name() + "\" out of range");
+                    {
+                        std::stringstream out;
+                        out << "\"" << name() << "\" (" << n << ") out of range [0, " << po_->size() << "[\n";
+                        out << boost::stacktrace::stacktrace();
+                        throw std::out_of_range(out.str());
+                    }
                 
                 return * (pi_ + n); 
             }
@@ -979,7 +985,12 @@ template <typename T>
             {
                 if (po_)
                     if (pi_ + n < po_->data() || po_->data() + po_->size() <= pi_ + n)
-                        throw std::out_of_range(std::string("\"") + name() + "\" out of range");
+                    {
+                        std::stringstream out;
+                        out << "\"" << name() << "\" (" << n << ") out of range [0, " << po_->size() << "[\n";
+                        out << boost::stacktrace::stacktrace();
+                        throw std::out_of_range(out.str());
+                    }
                 
                 return * (pi_ + n); 
             }
@@ -988,7 +999,12 @@ template <typename T>
         {
             if (po_)
                 if (pi_ < po_->data() || po_->data() + po_->size() <= pi_)
-                    throw std::out_of_range(std::string("\"") + name() + "\" out of range");
+                {
+                    std::stringstream out;
+                    out << "\"" << name() << "\" (" << pi_ - po_->data() << ") out of range [0, " << po_->size() << "[\n";
+                    out << boost::stacktrace::stacktrace();
+                    throw std::out_of_range(out.str());
+                }
                 
             return * pi_;
         }
@@ -997,7 +1013,12 @@ template <typename T>
         {
             if (po_)
                 if (pi_ < po_->data() || po_->data() + po_->size() <= pi_)
-                    throw std::out_of_range(std::string("\"") + name() + "\" out of range");
+                {
+                    std::stringstream out;
+                    out << "\"" << name() << "\" (" << pi_ - po_->data() << ") out of range [0, " << po_->size() << "[\n";
+                    out << boost::stacktrace::stacktrace();
+                    throw std::out_of_range(out.str());
+                }
                 
             return pi_;
         }
