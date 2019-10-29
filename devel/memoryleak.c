@@ -44,7 +44,7 @@ int main()
         getrusage(RUSAGE_SELF, & r_usage);
         printf("\rSpeed: %f loops / s; Memory usage: %ld kilobytes", i * 1000000.0 / time_diff(before , after), r_usage.ru_maxrss);
         fflush(stdout);
-        usleep(1);
+        //usleep(1);
     }
  
     return 0;

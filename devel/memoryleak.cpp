@@ -4,14 +4,16 @@
 
     Outputs:
 
-    boost::root_ptr<std::vector<test> > foo(const boost::node_proxy&)
-    void list_node::foo(const boost::node_proxy&): 30
+    boost::root_ptr<std::vector<test> > foo(boost::node_proxy &)
+    void list_node::foo(boost::node_proxy &): 30
     node 1
     Test1... test2... this is a test
     Test1Test1... t.. this is a test
     Test1XXXXXXXXXX.. this is a test
-    Test1XXXXXXXXXX.. this is a test"s" out of range
-    Speed: 15201.027749 loops / s; Memory usage: 3988 kilobytes
+    Test1XXXXXXXXXX.. this is a test"s" (33) out of range [0, 33[
+    0# main in memoryleak.cpp
+
+    Speed: 13454.10628 loops / s; Memory usage: 5852 kilobytes^C
     
  */
 

@@ -30,7 +30,7 @@
 #include <boost/thread/mutex.hpp>
 #endif
 
-#include <boost/stacktrace.hpp>
+#include <iostream>
 #include <boost/log/trivial.hpp>
 #include <boost/smart_ptr/detail/intrusive_list.hpp>
 #include <boost/smart_ptr/detail/intrusive_stack.hpp>
@@ -81,6 +81,15 @@ class node_proxy
     template <typename> friend class node_ptr;
     template <typename> friend class node_ptr;
 
+    /** Filename. */
+    char const * file_;
+
+    /** Function. */
+    char const * function_;
+    
+    /** Parent. */
+    node_proxy * parent_;
+    
     /** Stack depth. */
     size_t const depth_;
     
@@ -100,22 +109,31 @@ class node_proxy
     }
 #endif
 
-protected:
-    /** Main global mutex used for thread safety */
-    static size_t & static_depth()
-    {
-        static size_t depth_ = 0;
-
-        return depth_;
-    }
 
 public:
     /**
         Initialization of a single @c node_proxy .
     */
 
-    node_proxy(size_t depth = 0) : depth_(depth), destroying_(false)
+    node_proxy(char const * file, char const * function, size_t depth = 0, node_proxy * parent = nullptr) : file_(file), function_(function), depth_(depth), parent_(parent), destroying_(false)
     {
+    }
+    
+    
+    static node_proxy ** top_node_proxy()
+    {
+        thread_local node_proxy * p;
+        
+        return & p;
+    }
+    
+    
+    static std::ostream & stacktrace(std::ostream & out, node_proxy * p)
+    {
+        for (size_t depth = 0; p && p->depth_; ++ depth, p = p->parent_)
+            out << depth << "# " << p->function_ << " in " << p->file_ << '\n';
+        
+        return out;
     }
 
 
@@ -143,6 +161,12 @@ public:
     ~node_proxy()
     {
         reset();
+    }
+    
+    
+    node_proxy * parent() const
+    {
+        return parent_;
     }
     
     
@@ -190,8 +214,6 @@ private:
 
         for (intrusive_list::iterator<node_base, &node_base::node_tag_> m = node_list_.begin(), n = node_list_.begin(); m != node_list_.end(); m = n)
         {
-            //BOOST_LOG_TRIVIAL(info) << "<cycle>:" << boost::stacktrace::stacktrace(3, 1);
-            
             ++ n;
             delete &* m;
         }
@@ -208,18 +230,19 @@ public:
         Initialization of a single @c stack_node_proxy .
     */
 
-    stack_node_proxy() : node_proxy(++ static_depth())
+    stack_node_proxy(char const * file, char const * function, node_proxy & __y) : node_proxy(file, function, __y.depth() + 1, & __y)
     {
+        * top_node_proxy() = this;
     }
     
     
     /**
-        Destruction of a single @c node_proxy and detaching itself from other @c node_proxy .
-    */
-
+        Destruction of a single @c stack_node_proxy .
+     */
+    
     ~stack_node_proxy()
     {
-        -- static_depth();
+        * top_node_proxy() = parent();
     }
 };
 
@@ -825,12 +848,6 @@ template <>
         {
             return os << o.operator void const * ();
         }
-
-        ~root_ptr()
-        {
-            //if (po_ && ! cyclic() && header()->use_count() == 1)
-            //    BOOST_LOG_TRIVIAL(info) << "\"" << pn_ << "\":" << boost::stacktrace::stacktrace(1, 1);
-        }
     };
 
 
@@ -973,7 +990,7 @@ template <typename T>
                     {
                         std::stringstream out;
                         out << "\"" << name() << "\" (" << n << ") out of range [0, " << po_->size() << "[\n";
-                        out << boost::stacktrace::stacktrace();
+                        node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
                         throw std::out_of_range(out.str());
                     }
                 
@@ -988,7 +1005,7 @@ template <typename T>
                     {
                         std::stringstream out;
                         out << "\"" << name() << "\" (" << n << ") out of range [0, " << po_->size() << "[\n";
-                        out << boost::stacktrace::stacktrace();
+                        node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
                         throw std::out_of_range(out.str());
                     }
                 
@@ -1002,7 +1019,7 @@ template <typename T>
                 {
                     std::stringstream out;
                     out << "\"" << name() << "\" (" << pi_ - po_->data() << ") out of range [0, " << po_->size() << "[\n";
-                    out << boost::stacktrace::stacktrace();
+                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
                     throw std::out_of_range(out.str());
                 }
                 
@@ -1016,7 +1033,7 @@ template <typename T>
                 {
                     std::stringstream out;
                     out << "\"" << name() << "\" (" << pi_ - po_->data() << ") out of range [0, " << po_->size() << "[\n";
-                    out << boost::stacktrace::stacktrace();
+                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
                     throw std::out_of_range(out.str());
                 }
                 
