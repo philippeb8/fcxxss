@@ -1,10 +1,10 @@
 /**
 
-    Fornux C++ Superset 2.7 -- Example.
+    Fornux C++ Superset -- Example.
 
     Outputs:
     
-    Speed: 15387.378546 loops / s; Memory usage: 3988 kilobytes
+    Speed: 73115.324984 loops / s; Memory usage: 3912 kilobytes
     
  */
 

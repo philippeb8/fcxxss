@@ -1,6 +1,6 @@
 /**
 
-    Fornux C++ Superset 2.7 -- Example.
+    Fornux C++ Superset -- Example.
 
     Outputs:
 
@@ -13,7 +13,7 @@
     Test1XXXXXXXXXX.. this is a test"s" (33) out of range [0, 33[
     0# main in memoryleak.cpp
 
-    Speed: 13454.10628 loops / s; Memory usage: 5852 kilobytes^C
+    Speed: 71244.837758 loops / s; Memory usage: 4108 kilobytes
     
  */
 
@@ -214,7 +214,7 @@ int main(int argc, char * argv_[])
         struct rusage r_usage;
         getrusage(RUSAGE_SELF, & r_usage);
         cout << "\rSpeed: " << setprecision(11) << i * 1000.0 / (after - before).count() << " loops / s; Memory usage: " << r_usage.ru_maxrss << " kilobytes" << flush;
-        usleep(1);
+        //usleep(1);
     }
     
     // Templates:
