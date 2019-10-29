@@ -106,14 +106,14 @@ done
 #set -x
 
 if [[ ! -z "$@" ]]; then
-    case $(xdg-mime query filetype "$@") in
-    "text/x-csrc")
+    case "$@" in
+    *.c)
         STD="-xc"
         ;;
-    "text/x-c++src")
+    *.cc|*.cxx|*.cpp|*.c++)
         STD="-xc++ -std=c++11"
         ;;
-    "application/x-object")
+    *.o|*.obj)
         ;;
     *)
         (>&2 echo "$0: unrecognized file format")
@@ -144,7 +144,7 @@ if [[ ! -z "$@" ]]; then
 
         TEMPLOCK="$(echo $(pwd) | md5sum | cut -d ' ' -f1)"
         TEMPFILE="$@.cxx"
-        TEMPDIR="/tmp/fcxxss/$TEMPLOCK"
+        TEMPDIR="/var/tmp/fcxxss/$TEMPLOCK"
         TEMPSUBDIR=$(dirname "$TEMPFILE")
         
         (
@@ -159,13 +159,9 @@ if [[ ! -z "$@" ]]; then
             if [[ ! -z "$COMPILE" ]] && [[ -z "$OUTPUT" ]]; then
                 OUTPUT+="-o $(echo $@ | sed 's/\..*$/.o/')"
             fi
-        ) 200>"/var/lock/$TEMPLOCK.fcxxss.lock"
+        ) 200>"/var/$TEMPLOCK.fcxxss.lock"
         
-        ## IMPORTANT NOTE:
-        # The following client portion: "ssh $FCXXSS_USERNAME@fcxxss.fornux.com -- $STD $ISYSTEM" 
-        # is replaced on the server by: "fcxxss -ast-print /dev/stdin -- $STD $ISYSTEM"
-        if $FCXXSS_CC $STD $DEFINE $INCLUDE $ISYSTEM -E "$@" | ssh $FCXXSS_USERNAME@fcxxss.fornux.com -- $STD $ISYSTEM > "$TEMPDIR/$TEMPFILE" && $FCXXSS_CC -xc++ -std=c++11 $DEFINE $INCLUDE $ISYSTEM $OPT $CCFLAGS $PCH_INCLUDE "$TEMPDIR/$PCH_SHEADER" "$TEMPDIR/$TEMPFILE" $COMPILE "$OUTPUT" $PPOUTPUT $LIBRARY $LDFLAGS; then
-            #rm "$TEMPDIR/$TEMPLOCK/$TEMPFILE"
+        if $FCXXSS_CC $STD $DEFINE $INCLUDE $ISYSTEM -E "$@" | $ROOTDIR/bin/fcxxss -ast-print /dev/stdin -- $STD $ISYSTEM > "$TEMPDIR/$TEMPFILE" && $FCXXSS_CC -xc++ -std=c++11 $DEFINE $INCLUDE $ISYSTEM $OPT $CCFLAGS $PCH_INCLUDE "$TEMPDIR/$PCH_SHEADER" "$TEMPDIR/$TEMPFILE" $COMPILE "$OUTPUT" $PPOUTPUT $LIBRARY $LDFLAGS; then
             exit 0
         else
             (>&2 echo "$0: intermediate file '$TEMPDIR/$TEMPFILE'")

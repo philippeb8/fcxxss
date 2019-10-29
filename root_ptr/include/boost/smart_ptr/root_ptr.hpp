@@ -501,7 +501,7 @@ template <typename T>
             @param  p New pointer to manage.
         */
 
-        node_ptr & operator = (node_ptr<T> & p)
+        node_ptr & operator = (node_ptr<T> const & p)
         {
             return operator = <T>(p);
         }
@@ -535,14 +535,14 @@ template <typename T>
         */
 
         template <typename V>
-            node_ptr & operator = (node_ptr<V> & p)
+            node_ptr & operator = (node_ptr<V> const & p)
             {
 #ifndef BOOST_DISABLE_THREADS
                 mutex::scoped_lock scoped_lock(node_proxy::static_mutex());
 #endif
                 
                 if (px_->depth() < p.px_->depth())
-                    p.proxy(* px_);
+                    const_cast<node_ptr<V> &>(p).proxy(* px_);
 
                 base::operator = (p);
 
@@ -560,7 +560,7 @@ template <typename T>
         */
 
         template <typename V>
-            void reset(node_ptr<V> & p)
+            void reset(node_ptr<V> const & p)
             {
                 operator = <T>(p);
             }
@@ -773,7 +773,7 @@ template <>
                 return * this;
             }
 
-            root_ptr & operator = (root_ptr & p)
+            root_ptr & operator = (root_ptr const & p)
             {
                 pi_ = p.pi_;
                 
@@ -972,7 +972,7 @@ template <typename T>
                 return static_cast<root_ptr &>(base::operator = (p));
             }
 
-            root_ptr & operator = (root_ptr & p)
+            root_ptr & operator = (root_ptr const & p)
             {
                 pi_ = p.pi_;
                 
