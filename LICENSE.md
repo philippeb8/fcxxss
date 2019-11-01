@@ -31,7 +31,7 @@ YOU ACKNOWLEDGE THAT YOU HAVE READ THIS AGREEMENT, UNDERSTAND IT AND AGREE TO BE
 
 THIS DISTRIBUTION ALSO INCLUDES THE FOLLOWING UTILITIES IN PART OR DERIVED FROM:
 http://cygwin.org/install.html  
-https://www.boost.org/users/download
+https://www.boost.org/users/download  
 http://releases.llvm.org/download.html  
 https://github.com/darealshinji/gcc2msvc  
 
