@@ -13,19 +13,34 @@ Fornux Inc.
 1) Shareware (Windows)
 
 
-Example #1:
+Example #1 (Cygwin):
 
-- Changing the directory: "fcxxss/"
+- Changing the directory: "cd fcxxss/"
 
 - Setting the path: "export PATH=$(pwd)/bin:$PATH"
 
-- Changing the directory: "devel/"
+- Changing the directory: "cd devel/"
 
 - Setting the compiler: "export FCXXSS_CC=cl.sh"
 
 - Running: "fcxxss-cl.sh memoryleak.cpp -O2"
 
 - Executing: "./a.exe"
+
+
+Example #2 (CMD):
+
+- Changing the directory: "cd fcxxss\"
+
+- Setting the path: "set PATH=%CD%\bin;%PATH%"
+
+- Changing the directory: "cd devel\"
+
+- Setting the compiler: "set FCXXSS_CC=cl.sh"
+
+- Running: "bash -c 'fcxxss-cl.sh memoryleak.cpp -O2'"
+
+- Executing: ".\a.exe"
 
 
 2) Software as a Service (Linux & Windows):
@@ -45,7 +60,7 @@ Example #1:
 
 Example #1:
 
-- Changing the directory on the host to: "fcxxss/devel/"
+- Changing the directory on the host to: "cd fcxxss/devel/"
 
 - Running: "export FCXXSS_CC=\<compiler\>"
 
@@ -58,7 +73,7 @@ Example #1:
 
 Example #2:
 
-- Changing the directory: "fcxxss/"
+- Changing the directory: "cd fcxxss/"
 
 - Setting the path: "export PATH=$(pwd)/bin:$PATH"
 

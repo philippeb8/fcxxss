@@ -30,11 +30,12 @@ IN NO EVENT WILL THE AUTHOR OR ANY OTHER PARTY WHO MAY HAVE DISTRIBUTED THE SOFT
 YOU ACKNOWLEDGE THAT YOU HAVE READ THIS AGREEMENT, UNDERSTAND IT AND AGREE TO BE BOUND BY ITS TERMS AND CONDITIONS.
 
 THIS DISTRIBUTION ALSO INCLUDES THE FOLLOWING UTILITIES IN PART OR DERIVED FROM:
-http://cygwin.org/install.html
-http://releases.llvm.org/download.html
-https://github.com/darealshinji/gcc2msvc
+http://cygwin.org/install.html  
+https://www.boost.org/users/download
+http://releases.llvm.org/download.html  
+https://github.com/darealshinji/gcc2msvc  
 
 
-Fornux Inc.
-Copyright © 2019
-www.fornux.com
+Fornux Inc.  
+Copyright © 2019  
+www.fornux.com  
