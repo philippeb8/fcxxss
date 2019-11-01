@@ -13,13 +13,17 @@ Fornux Inc.
 1) Shareware (Windows)
 
 
-Example:
+Example #1:
 
-- Changing the directory on the host to: "fcxxss/devel"
+- Changing the directory: "fcxxss/"
 
-- Setting the compiler: "export FCXXSS_CC=$(pwd)/../bin/cl.sh"
+- Setting the path: "export PATH=$(pwd)/bin:$PATH"
 
-- Running: "../bin/fcxxss-cl.sh memoryleak.cpp -O2"
+- Changing the directory: "devel/"
+
+- Setting the compiler: "export FCXXSS_CC=cl.sh"
+
+- Running: "fcxxss-cl.sh memoryleak.cpp -O2"
 
 - Executing: "./a.exe"
 
@@ -41,7 +45,7 @@ Example:
 
 Example #1:
 
-- Changing the directory on the host to: "fcxxss/devel"
+- Changing the directory on the host to: "fcxxss/devel/"
 
 - Running: "export FCXXSS_CC=\<compiler\>"
 
@@ -54,7 +58,11 @@ Example #1:
 
 Example #2:
 
-- Add "fcxxss.sh" directory to $PATH
+- Changing the directory: "fcxxss/"
+
+- Setting the path: "export PATH=$(pwd)/bin:$PATH"
+
+- Changing the working directory
 
 - Cmake one-liner: "FCXXSS_LD=\<compiler\> FCXXSS_CC=\<compiler\> FCXXSS_USERNAME=\<email\> cmake -DCMAKE_C_COMPILER=fcxxss.sh -DCMAKE_CXX_COMPILER=fcxxss.sh .."
 
