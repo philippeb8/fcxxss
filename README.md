@@ -74,5 +74,5 @@ Also it was tested with GNU GCC 5 & 6, Clang 5 & 6.
 
 Sincerely,  
 Phil Bouchard  
-C.T.O. of Fornux Inc.  
+CEO of Fornux Inc.  
 phil@fornux.com  
