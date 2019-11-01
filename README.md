@@ -12,7 +12,12 @@ Fornux Inc.
 
 1) Shareware (Windows)
 
+
+Example:
+
 - Changing the directory on the host to: "fcxxss/devel"
+
+- Setting the compiler: "export FCXXSS_CC=$(pwd)/../bin/cl.sh"
 
 - Running: "../bin/fcxxss-cl.sh memoryleak.cpp -O2"
 
