@@ -2,26 +2,29 @@
 
     Fornux C++ Superset -- Example.
 
-    Outputs:
+    Outputs ('clang-cl' on Cygwin):
 
-    boost::root_ptr<std::vector<test> > foo(boost::node_proxy &)
-    void list_node::foo(boost::node_proxy &): 30
-    node 1
-    Test1... test2... this is a test
-    Test1Test1... t.. this is a test
-    Test1XXXXXXXXXX.. this is a test
-    Test1XXXXXXXXXX.. this is a test"s" (33) out of range [0, 33[
-    0# main in memoryleak.cpp
+	foo
+	foo: 30
+	node 1
+	Test1... test2... this is a test
+	Test1Test1... t.. this is a test
+	Test1XXXXXXXXXX.. this is a test
+	Test1XXXXXXXXXX.. this is a test"s" (33) out of range [0, 33[
+	0# main in C:/cygwin64/home/phili_000/devel/fcxxss/devel/memoryleak.cpp
 
-    Speed: 71244.837758 loops / s; Memory usage: 4108 kilobytes
+	Speed: 185520.52545 loops / s; Memory usage: 2336 kilobytes
     
  */
 
 
-#include <stdlib.h>
+#if defined(_WIN32)
+#include <windows.h>
+#include <psapi.h>
+#elif defined(__unix__) || defined(__unix) || defined(unix) || (defined(__APPLE__) && defined(__MACH__))
 #include <unistd.h>
-#include <string.h>
 #include <sys/resource.h>
+#endif
 
 #include <chrono>
 #include <iostream>
@@ -95,7 +98,7 @@ struct list_node : D, E
         auto o = j;
         auto f = [this, i, d](int a) { return r + a; };
         
-        cout << __PRETTY_FUNCTION__ << ": " << f(10) << endl;
+        cout << __func__ << ": " << f(10) << endl;
     }
 };
 
@@ -103,7 +106,7 @@ typedef struct { int i; } test;
 
 test * foo()
 {
-    cout << __PRETTY_FUNCTION__ << endl;
+    cout << __func__ << endl;
     
     return (test *) 0;
 }
@@ -149,6 +152,10 @@ template <typename T>
     };
 }
 
+#if defined(_WIN32)
+SIZE_T GetMemoryUsage( DWORD processID );
+#endif
+
 int main(int argc, char * argv_[])
 {
     // Transfering 2D external buffers into internal buffers:
@@ -182,7 +189,7 @@ int main(int argc, char * argv_[])
     
     memset(s + 5, 'X', 10);
     cout << s << endl;
-    
+
     // Buffer overflow implicit detection:
     try
     {
@@ -195,7 +202,7 @@ int main(int argc, char * argv_[])
     {
         cout << e.what() << endl;
     }
-    
+
     // Proper cyclic memory leaks management:
     milliseconds before, after;
  
@@ -211,10 +218,15 @@ int main(int argc, char * argv_[])
         
         // stats
         after = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+		
+#if defined(_WIN32)
+		cout << "\rSpeed: " << setprecision(11) << i * 1000.0 / (after - before).count() << " loops / s; Memory usage: " << GetMemoryUsage(GetCurrentProcessId()) / 1024 << " kilobytes" << flush;
+#elif defined(__unix__) || defined(__unix) || defined(unix) || (defined(__APPLE__) && defined(__MACH__))
         struct rusage r_usage;
         getrusage(RUSAGE_SELF, & r_usage);
+
         cout << "\rSpeed: " << setprecision(11) << i * 1000.0 / (after - before).count() << " loops / s; Memory usage: " << r_usage.ru_maxrss << " kilobytes" << flush;
-        //usleep(1);
+#endif
     }
     
     // Templates:
@@ -224,3 +236,22 @@ int main(int argc, char * argv_[])
     return 0;
 }
 
+#if defined(_WIN32)
+SIZE_T GetMemoryUsage( DWORD processID )
+{
+    HANDLE hProcess;
+    PROCESS_MEMORY_COUNTERS pmc;
+
+    hProcess = OpenProcess(  PROCESS_QUERY_INFORMATION |
+                             PROCESS_VM_READ,
+                             FALSE, 
+                             processID );
+    if (NULL == hProcess)
+        return 0;
+
+    if ( GetProcessMemoryInfo(hProcess, &pmc, sizeof(pmc)) )
+        return pmc.WorkingSetSize;
+
+    CloseHandle( hProcess );
+}
+#endif

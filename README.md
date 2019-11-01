@@ -10,7 +10,16 @@ Fornux Inc.
 *******************************************************************************
 
 
-To try it out it's only a matter of:
+1) Shareware (Windows)
+
+- Changing the directory on the host to: "fcxxss/devel"
+
+- Running: "../bin/fcxxss-cl.sh memoryleak.cpp -O2"
+
+- Executing: "./a.exe"
+
+
+2) Software as a Service (Linux & Windows):
 
 - Creating an account at: https://fcxxss.fornux.com/db/signup.php
 
