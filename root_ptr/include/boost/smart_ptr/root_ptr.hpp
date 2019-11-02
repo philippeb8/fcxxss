@@ -131,7 +131,7 @@ public:
     static std::ostream & stacktrace(std::ostream & out, node_proxy * p)
     {
         for (size_t depth = 0; p && p->depth_; ++ depth, p = p->parent_)
-            out << depth << "# " << p->function_ << " in " << p->file_ << '\n';
+            out << '#' << depth << ' ' << p->function_ << " in " << p->file_ << '\n';
         
         return out;
     }
