@@ -59,8 +59,6 @@ Example #2 (CMD):
 
 - Copying the contents of "~/.ssh/id_rsa.pub" into "Settings -> SSH Public Key" and clicking "Save"
 
-- Installing the development headers "libboost1.62-dev" (Ubuntu Linux)
-
 
 Example #1:
 
