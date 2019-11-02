@@ -5,8 +5,6 @@
 # Copyright (c) Fornux Inc. 2019
 #
 
-ROOTDIR=$(dirname "$0")/..
-
 usage() 
 {
     echo "Usage: $0 [options] file"
@@ -28,7 +26,7 @@ while true ; do
         -v) OPT+="$1 " ; shift 1 ;;
         -c) COMPILE+="$1 " ; shift 1 ;;
         -S) OPT+="$1 " ; shift 1 ;;
-        -E) OPT+="$1 -I $ROOTDIR/include "; shift 1 ;;
+        -E) OPT+="$1 -I $FCXXSS_DIR/include "; shift 1 ;;
         -w) OPT+="$1 " ; shift 1 ;;
         -C) OPT+="$1 " ; shift 1 ;;
         -s) OPT+="$1 " ; shift 1 ;;
@@ -153,7 +151,7 @@ if [[ ! -z "$@" ]]; then
             mkdir -p "$TEMPDIR/$TEMPSUBDIR"
             
             if [[ ! -f "$TEMPDIR/$PCH_HEADER" ]]; then
-                $FCXXSS_CC -xc++-header -std=c++11 $DEFINE $OPT $CCFLAGS -I "$ROOTDIR/include" "$ROOTDIR/include/fcxxss.h" -o "$TEMPDIR/$PCH_HEADER"
+                $FCXXSS_CC -xc++-header -std=c++11 $DEFINE $OPT $CCFLAGS -I "$FCXXSS_DIR/include" "$FCXXSS_DIR/include/fcxxss.h" -o "$TEMPDIR/$PCH_HEADER"
             fi
 
             if [[ ! -z "$COMPILE" ]] && [[ -z "$OUTPUT" ]]; then
@@ -161,7 +159,7 @@ if [[ ! -z "$@" ]]; then
             fi
         ) 200>"/var/$TEMPLOCK.fcxxss.lock"
         
-        if $FCXXSS_CC $STD $DEFINE $INCLUDE $ISYSTEM -E "$@" | $ROOTDIR/bin/fcxxss -ast-print /dev/stdin -- $STD $ISYSTEM > "$TEMPDIR/$TEMPFILE" && $FCXXSS_CC -xc++ -std=c++11 $DEFINE $INCLUDE $ISYSTEM $OPT $CCFLAGS $PCH_INCLUDE "$TEMPDIR/$PCH_SHEADER" "$TEMPDIR/$TEMPFILE" $COMPILE "$OUTPUT" $PPOUTPUT $LIBRARY $LDFLAGS; then
+        if $FCXXSS_CC $STD $DEFINE $INCLUDE $ISYSTEM -E "$@" | $FCXXSS_DIR/bin/fcxxss -ast-print /dev/stdin -- $STD $ISYSTEM > "$TEMPDIR/$TEMPFILE" && $FCXXSS_CC -xc++ -std=c++11 $DEFINE $INCLUDE $ISYSTEM $OPT $CCFLAGS $PCH_INCLUDE "$TEMPDIR/$PCH_SHEADER" "$TEMPDIR/$TEMPFILE" $COMPILE "$OUTPUT" $PPOUTPUT $LIBRARY $LDFLAGS; then
             exit 0
         else
             (>&2 echo "$0: intermediate file '$TEMPDIR/$TEMPFILE'")

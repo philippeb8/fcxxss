@@ -17,6 +17,8 @@ Example #1 (Cygwin):
 
 - Changing the directory: "cd fcxxss/"
 
+- Setting the root dir: "export FCXXSS_DIR=$(pwd)"
+
 - Setting the path: "export PATH=$(pwd)/bin:$PATH"
 
 - Changing the directory: "cd devel/"
@@ -31,6 +33,8 @@ Example #1 (Cygwin):
 Example #2 (CMD):
 
 - Changing the directory: "cd fcxxss\"
+
+- Setting the root dir: "set FCXXSS_DIR=%CD%"
 
 - Setting the path: "set PATH=%CD%\bin;%PATH%"
 
@@ -60,13 +64,19 @@ Example #2 (CMD):
 
 Example #1:
 
-- Changing the directory on the host to: "cd fcxxss/devel/"
+- Changing the directory: "cd fcxxss/"
+
+- Setting the root dir: "export FCXXSS_DIR=$(pwd)"
+
+- Setting the path: "export PATH=$(pwd)/bin:$PATH"
+
+- Changing the directory: "cd devel/"
 
 - Running: "export FCXXSS_CC=\<compiler\>"
 
 - Running: "export FCXXSS_USERNAME=\<email\>"
 
-- Running: "../bin/fcxxss.sh memoryleak.cpp -O2"
+- Running: "fcxxss.sh memoryleak.cpp -O2"
 
 - Executing: "./a.out"
 
@@ -74,6 +84,8 @@ Example #1:
 Example #2:
 
 - Changing the directory: "cd fcxxss/"
+
+- Setting the root dir: "export FCXXSS_DIR=$(pwd)"
 
 - Setting the path: "export PATH=$(pwd)/bin:$PATH"
 
