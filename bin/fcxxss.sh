@@ -159,7 +159,7 @@ if [[ ! -z "$@" ]]; then
             fi
         ) 200>"/var/$TEMPLOCK.fcxxss.lock"
         
-        if $FCXXSS_CC $STD $DEFINE $INCLUDE $ISYSTEM -E "$@" | $FCXXSS_DIR/bin/fcxxss -ast-print /dev/stdin -- $STD $ISYSTEM > "$TEMPDIR/$TEMPFILE" && $FCXXSS_CC -xc++ -std=c++11 $DEFINE $INCLUDE $ISYSTEM $OPT $CCFLAGS $PCH_INCLUDE "$TEMPDIR/$PCH_SHEADER" "$TEMPDIR/$TEMPFILE" $COMPILE "$OUTPUT" $PPOUTPUT $LIBRARY $LDFLAGS; then
+        if $FCXXSS_CC $STD $DEFINE $INCLUDE $ISYSTEM -E "$@" | fcxxss -ast-print /dev/stdin -- $STD $ISYSTEM > "$TEMPDIR/$TEMPFILE" && $FCXXSS_CC -xc++ -std=c++11 $DEFINE $INCLUDE $ISYSTEM $OPT $CCFLAGS $PCH_INCLUDE "$TEMPDIR/$PCH_SHEADER" "$TEMPDIR/$TEMPFILE" $COMPILE "$OUTPUT" $PPOUTPUT $LIBRARY $LDFLAGS; then
             exit 0
         else
             (>&2 echo "$0: intermediate file '$TEMPDIR/$TEMPFILE'")

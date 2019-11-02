@@ -141,13 +141,13 @@ if [[ ! -z "$@" ]]; then
 		fi
 
 		printf "${YELLOW}>>> Pass 1${NOCOLOR}\n"
-        if $FCXXSS_CC $STD $DEFINE "$INCLUDE" -E "$@" -w | $FCXXSS_DIR/bin/ffldwuc -aup > "$TEMPDIR/$TEMPFILE.pass1.cxx"; then
+        if $FCXXSS_CC $STD $DEFINE "$INCLUDE" -E "$@" -w | ffldwuc -aup > "$TEMPDIR/$TEMPFILE.pass1.cxx"; then
 		
 			printf "${YELLOW}>>> Pass 2${NOCOLOR}\n"
-			if $FCXXSS_DIR/bin/fcxxss -ast-print "$TEMPDIR/$TEMPFILE".pass1.cxx -- "$ISYSTEM" --driver-mode=cl /EHa /w | $FCXXSS_DIR/bin/ffldwuc -amp > "$TEMPDIR/$TEMPFILE.pass2.cxx"; then
+			if fcxxss -ast-print "$TEMPDIR/$TEMPFILE".pass1.cxx -- "$ISYSTEM" --driver-mode=cl /EHa /w | ffldwuc -amp > "$TEMPDIR/$TEMPFILE.pass2.cxx"; then
 			
 				printf "${YELLOW}>>> Pass 3${NOCOLOR}\n"
-				if $FCXXSS_CC $DEFINE $INCLUDE $ISYSTEM $OPT $CCFLAGS -I "$FCXXSS_DIR/include" -I "$FCXXSS_DIR/root_ptr/include" -include "$FCXXSS_DIR/include/fcxxss.h" -include windows.h $($FCXXSS_DIR/bin/cygpath -awp "$TEMPDIR/$TEMPFILE.pass2.cxx") "$COMPILE" "$OUTPUT" "$PPOUTPUT" $LIBRARY $LDFLAGS -w; then
+				if $FCXXSS_CC $DEFINE $INCLUDE $ISYSTEM $OPT $CCFLAGS -I "$FCXXSS_DIR/include" -I "$FCXXSS_DIR/root_ptr/include" -include "$FCXXSS_DIR/include/fcxxss.h" -include windows.h $(cygpath -awp "$TEMPDIR/$TEMPFILE.pass2.cxx") "$COMPILE" "$OUTPUT" "$PPOUTPUT" $LIBRARY $LDFLAGS -w; then
 					exit 0
 				else
 					(>&2 printf "${RED}$0: intermediate files '$TEMPDIR/$TEMPFILE.pass?.cxx${NOCOLOR}\n")
