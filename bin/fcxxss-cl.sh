@@ -176,10 +176,10 @@ if [[ ! -z "$@" ]]; then
         ) 200>"/var/tmp/$TEMPLOCK.fcxxss.lock"
         
 		printf "${YELLOW}>>> pass 2${NOCOLOR}\n"
-		if ($FCXXSS_CC $STD $DEFINE $INCLUDE /I $(cygpath -amp "$FCXXSS_DIR/include") /I $(cygpath -amp "$FCXXSS_DIR/root_ptr/include") -E "$@" -w | ffldwuc -aup > "$TEMPDIR/$TEMPFILE.pass2.cxx"); then
+		if ($FCXXSS_CC $STD $DEFINE $INCLUDE /I $(cygpath -amp "$FCXXSS_DIR/include") /I $(cygpath -amp "$FCXXSS_DIR/root_ptr/include") -E "$@" -w | ffldwuc -aup > "$TEMPDIR/$TEMPFILE.pass2.cxx" && test ${PIPESTATUS[0]} -eq 0); then
 		
 			printf "${YELLOW}>>> pass 3${NOCOLOR}\n"
-			if (fcxxss -ast-print "$TEMPDIR/$TEMPFILE.pass2.cxx" -- $ISYSTEM --driver-mode=cl /EHa | ffldwuc -amp > "$TEMPDIR/$TEMPFILE.pass3.cxx"); then
+			if (fcxxss -ast-print "$TEMPDIR/$TEMPFILE.pass2.cxx" -- $ISYSTEM --driver-mode=cl /EHa | ffldwuc -amp > "$TEMPDIR/$TEMPFILE.pass3.cxx" && test ${PIPESTATUS[0]} -eq 0); then
 			
 				printf "${YELLOW}>>> pass 4${NOCOLOR}\n"
 				if ($FCXXSS_CC $DEFINE $INCLUDE $ISYSTEM $OPT $CCFLAGS -Xclang $PCH_INCLUDE -Xclang $(cygpath -amp "$TEMPDIR/$PCH_SHEADER") /I $(cygpath -amp "$FCXXSS_DIR/include") /I $(cygpath -amp "$FCXXSS_DIR/root_ptr/include") /FI Windows.h $(cygpath -amp "$TEMPDIR/$TEMPFILE.pass3.cxx") $COMPILE $OUTPUT $PPOUTPUT $LIBRARY $LDFLAGS /EHa); then
