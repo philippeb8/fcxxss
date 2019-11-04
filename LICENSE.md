@@ -33,7 +33,6 @@ THIS DISTRIBUTION ALSO INCLUDES THE FOLLOWING UTILITIES IN PART OR DERIVED FROM:
 http://cygwin.org/install.html  
 https://www.boost.org/users/download  
 http://releases.llvm.org/download.html  
-https://github.com/darealshinji/gcc2msvc  
 
 
 Fornux Inc.  
