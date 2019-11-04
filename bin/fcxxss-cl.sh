@@ -12,10 +12,10 @@ usage()
     echo "Fornux C++ Superset Source-to-Source Compiler 5.0 (for clang-cl)"
 }
 
-CCFLAGS="-Wno-shadow -Wno-unused-parameter -Wno-unused-value -Wno-missing-prototypes -Wno-format-security -Wno-extern-initializer -Wno-gcc-compat -Wno-null-dereference -Wno-exit-time-destructors -Wno-unused-command-line-argument -fexceptions -DBOOST_ERROR_CODE_HEADER_ONLY -DBOOST_DISABLE_THREADS"
-LDFLAGS="-lstdc++"
+CCFLAGS="-Wno-shadow -Wno-unused-parameter -Wno-unused-value -Wno-missing-prototypes -Wno-format-security -Wno-extern-initializer -Wno-gcc-compat -Wno-null-dereference -Wno-exit-time-destructors -Wno-unused-command-line-argument -DBOOST_ERROR_CODE_HEADER_ONLY -DBOOST_DISABLE_THREADS"
+LDFLAGS=""
 
-GETOPT=$(getopt -a -o vcSEwCsI:L:D:U:o:f:W::m:g::O::x:d:l:B:b:V: -l username:,compiler:,linker:,pipe,ansi,std:,traditional,traditional-cpp,pedantic,pedantic-errors,nostartfiles,nodefaultlibs,nostdlib,pie,rdynamic,static,static-libgcc,static-libstdc++,shared,shared-libgcc,symbolic,threads,pthreads,pthread,version,param:,idirafter:,include:,isystem:,c-isystem:,cxx-isystem:,imacros:,iprefix:,iwithprefix:,iwithprefixbefore:,isystem:,imultilib:,isysroot:,iquote:,specs:,sysroot:,param:,soname:,Xpreprocessor:,Xassembler:,Xlinker:,M,MM,MF:,MG,MP,MT:,MQ:,MD,MMD -n $0 -- "$@")
+GETOPT=$(getopt -a -o vcSEwCsI:L:D:U:o:f:W::m:g::O::x:d:l:B:b:V: -l username:,compiler:,linker:,pipe,ansi,std:,traditional,traditional-cpp,pedantic,pedantic-errors,nostartfiles,nodefaultlibs,nostdlib,pie,rdynamic,static,static-libgcc,static-libstdc++,shared,shared-libgcc,symbolic,threads,pthreads,pthread,version,param:,idirafter:,include:,isystem:,c-isystem:,cxx-isystem:,imacros:,iprefix:,iwithprefix:,iwithprefixbefore:,isystem:,imultilib:,isysroot:,iquote:,specs:,sysroot:,param:,soname:,Xpreprocessor:,Xassembler:,Xlinker:,Xclang:,M,MM,MF:,MG,MP,MT:,MQ:,MD,MMD -n $0 -- "$@")
 
 if [[ $? != 0 ]] ; then usage ; exit 1 ; fi
 
@@ -85,9 +85,10 @@ while true ; do
         --sysroot) OPT+="$1 $2 " ; shift 2 ;;
         --param) OPT+="$1 $2 " ; shift 2 ;;
         --soname) OPT+="-install_name $2 " ; shift 2 ;;
-        --Xpreprocessor) OPT+="$1 $2 " ; shift 2 ;;
-        --Xassembler) OPT+="$1 $2 " ; shift 2 ;;
-        --Xlinker) OPT+="$1 $2 " ; shift 2 ;;
+        --Xpreprocessor) OPT+="-Xpreprocessor $2 " ; shift 2 ;;
+        --Xassembler) OPT+="-Xassembler $2 " ; shift 2 ;;
+        --Xlinker) OPT+="-Xlinker $2 " ; shift 2 ;;
+        --Xclang) OPT+="-Xclang $2 " ; shift 2 ;;
         --M) PPOUTPUT+="-M " ; shift 1 ;;
         --MM) PPOUTPUT+="-MM " ; shift 1 ;;
         --MF) PPOUTPUT+="-MF $2 " ; shift 2 ;;
@@ -129,36 +130,70 @@ if [[ ! -z "$@" ]]; then
             exit 1
         fi
 
+        if $FCXXSS_CC --version | grep ^clang > /dev/null; then
+            PCH_INCLUDE=-include-pch
+            PCH_HEADER=fcxxss$DEBUG.hpp.pass1.pch
+            PCH_SHEADER=fcxxss$DEBUG.hpp.pass1.pch
+        elif $FCXXSS_CC --version | grep ^gcc > /dev/null; then
+            PCH_INCLUDE=-include
+            PCH_HEADER=fcxxss$DEBUG.hpp.pass1.gch
+            PCH_SHEADER=fcxxss$DEBUG.hpp
+		else
+			(>&2 printf "${RED}$0: couldn't determine compiler type${NOCOLOR}\n")
+			exit 1
+        fi
+
         TEMPLOCK="$(echo $(pwd) | md5sum | cut -d ' ' -f1)"
         TEMPFILE="$@"
         TEMPDIR="/var/tmp/fcxxss/$TEMPLOCK"
         TEMPSUBDIR=$(dirname "$TEMPFILE")
         
         mkdir -p "$TEMPDIR/$TEMPSUBDIR"
-            
-		if [[ ! -z "$COMPILE" ]] && [[ -z "$OUTPUT" ]]; then
-			OUTPUT+="-o $(echo $@ | sed 's/\..*$/.o/')"
+        
+		if [[ -z "$COMPILE" ]]; then
+			if [[ -z "$OUTPUT" ]]; then
+				OUTPUT+="-o $(echo $@ | sed 's/\..*$/.exe/')"
+			fi
+		else
+			if [[ -z "$OUTPUT" ]]; then
+				OUTPUT+="-o $(echo $@ | sed 's/\..*$/.o/')"
+			fi
 		fi
-
-		printf "${YELLOW}>>> Pass 1${NOCOLOR}\n"
-        if $FCXXSS_CC $STD $DEFINE "$INCLUDE" -E "$@" -w | ffldwuc -aup > "$TEMPDIR/$TEMPFILE.pass1.cxx"; then
 		
-			printf "${YELLOW}>>> Pass 2${NOCOLOR}\n"
-			if fcxxss -ast-print "$TEMPDIR/$TEMPFILE".pass1.cxx -- "$ISYSTEM" --driver-mode=cl /EHa /w | ffldwuc -amp > "$TEMPDIR/$TEMPFILE.pass2.cxx"; then
+		(
+            flock -s 200
+
+			if [[ ! -f "$TEMPDIR/$PCH_HEADER" ]]; then
 			
-				printf "${YELLOW}>>> Pass 3${NOCOLOR}\n"
-				if $FCXXSS_CC $DEFINE $INCLUDE $ISYSTEM $OPT $CCFLAGS -I "$FCXXSS_DIR/include" -I "$FCXXSS_DIR/root_ptr/include" -include "$FCXXSS_DIR/include/fcxxss.h" -include windows.h $(cygpath -awp "$TEMPDIR/$TEMPFILE.pass2.cxx") "$COMPILE" "$OUTPUT" "$PPOUTPUT" $LIBRARY $LDFLAGS -w; then
+				printf "${YELLOW}>>> pass 1${NOCOLOR}\n"
+                if ($FCXXSS_CC $DEFINE $OPT $CCFLAGS /I $(cygpath -amp "$FCXXSS_DIR/include") /I $(cygpath -amp "$FCXXSS_DIR/root_ptr/include") $(cygpath -amp "$FCXXSS_DIR/include/fcxxss.hpp") /EHa && mv fcxxss.pch "$TEMPDIR/$PCH_HEADER"); then
+					exit 0
+				else
+					(>&2 printf "${RED}$0: intermediate file '$TEMPDIR/$PCH_HEADER${NOCOLOR}\n")
+					exit 1
+				fi
+            fi
+        ) 200>"/var/tmp/$TEMPLOCK.fcxxss.lock"
+        
+		printf "${YELLOW}>>> pass 2${NOCOLOR}\n"
+		if ($FCXXSS_CC $STD $DEFINE $INCLUDE /I $(cygpath -amp "$FCXXSS_DIR/include") /I $(cygpath -amp "$FCXXSS_DIR/root_ptr/include") -E "$@" -w | ffldwuc -aup > "$TEMPDIR/$TEMPFILE.pass2.cxx"); then
+		
+			printf "${YELLOW}>>> pass 3${NOCOLOR}\n"
+			if (fcxxss -ast-print "$TEMPDIR/$TEMPFILE.pass2.cxx" -- $ISYSTEM --driver-mode=cl /EHa | ffldwuc -amp > "$TEMPDIR/$TEMPFILE.pass3.cxx"); then
+			
+				printf "${YELLOW}>>> pass 4${NOCOLOR}\n"
+				if ($FCXXSS_CC $DEFINE $INCLUDE $ISYSTEM $OPT $CCFLAGS -Xclang $PCH_INCLUDE -Xclang $(cygpath -amp "$TEMPDIR/$PCH_SHEADER") /I $(cygpath -amp "$FCXXSS_DIR/include") /I $(cygpath -amp "$FCXXSS_DIR/root_ptr/include") /FI Windows.h $(cygpath -amp "$TEMPDIR/$TEMPFILE.pass3.cxx") $COMPILE $OUTPUT $PPOUTPUT $LIBRARY $LDFLAGS /EHa); then
 					exit 0
 				else
 					(>&2 printf "${RED}$0: intermediate files '$TEMPDIR/$TEMPFILE.pass?.cxx${NOCOLOR}\n")
 					exit 1
 				fi
 			else
-				(>&2 printf "${RED}$0: intermediate file '$TEMPDIR/$TEMPFILE.pass2.cxx${NOCOLOR}\n")
+				(>&2 printf "${RED}$0: intermediate file '$TEMPDIR/$TEMPFILE.pass3.cxx${NOCOLOR}\n")
 				exit 1
 			fi
 		else
-			(>&2 printf "${RED}$0: intermediate file '$TEMPDIR/$TEMPFILE.pass1.cxx${NOCOLOR}\n")
+			(>&2 printf "${RED}$0: intermediate file '$TEMPDIR/$TEMPFILE.pass2.cxx${NOCOLOR}\n")
 			exit 1
 		fi
     else
