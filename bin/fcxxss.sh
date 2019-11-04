@@ -140,10 +140,10 @@ if [[ ! -z "$@" ]]; then
             PCH_SHEADER=fcxxss$DEBUG.h
         fi
 
-        TEMPLOCK="$(echo $(pwd) | md5sum | cut -d ' ' -f1)"
-        TEMPFILE="$@.cxx"
-        TEMPDIR="/var/tmp/fcxxss/$TEMPLOCK"
-        TEMPSUBDIR=$(dirname "$TEMPFILE")
+		TEMPLOCK="$(echo $(pwd) | md5sum | cut -d ' ' -f1)"
+		TEMPFILE="$@.cxx"
+		TEMPDIR="/var/tmp/fcxxss/$TEMPLOCK"
+		TEMPSUBDIR=$(dirname "$TEMPFILE")
         
         (
             flock -s 200

@@ -143,7 +143,7 @@ if [[ ! -z "$@" ]]; then
 			exit 1
         fi
 
-        TEMPLOCK="$(echo $(pwd) | md5sum | cut -d ' ' -f1)"
+		TEMPLOCK="$(echo $(pwd) | md5sum | cut -d ' ' -f1)"
         TEMPFILE="$@"
         TEMPDIR="/var/tmp/fcxxss/$TEMPLOCK"
         TEMPSUBDIR=$(dirname "$TEMPFILE")
@@ -166,7 +166,7 @@ if [[ ! -z "$@" ]]; then
 			if [[ ! -f "$TEMPDIR/$PCH_HEADER" ]]; then
 			
 				printf "${YELLOW}>>> pass 1${NOCOLOR}\n"
-                if ($FCXXSS_CC $DEFINE $OPT $CCFLAGS /I $(cygpath -amp "$FCXXSS_DIR/include") /I $(cygpath -amp "$FCXXSS_DIR/root_ptr/include") $(cygpath -amp "$FCXXSS_DIR/include/fcxxss.hpp") /EHa && mv fcxxss.pch "$TEMPDIR/$PCH_HEADER"); then
+                if ($FCXXSS_CC $DEFINE $OPT $CCFLAGS /I $(cygpath -amp "$FCXXSS_DIR/include") $(cygpath -amp "$FCXXSS_DIR/include/fcxxss.hpp") /EHa && mv fcxxss.pch "$TEMPDIR/$PCH_HEADER"); then
 					exit 0
 				else
 					(>&2 printf "${RED}$0: intermediate file '$TEMPDIR/$PCH_HEADER${NOCOLOR}\n")
@@ -182,7 +182,7 @@ if [[ ! -z "$@" ]]; then
 			if (fcxxss -ast-print "$TEMPDIR/$TEMPFILE.pass2.cxx" -- $ISYSTEM --driver-mode=cl /EHa | ffldwuc -amp > "$TEMPDIR/$TEMPFILE.pass3.cxx" && test ${PIPESTATUS[0]} -eq 0); then
 			
 				printf "${YELLOW}>>> pass 4${NOCOLOR}\n"
-				if ($FCXXSS_CC $DEFINE $INCLUDE $ISYSTEM $OPT $CCFLAGS -Xclang $PCH_INCLUDE -Xclang $(cygpath -amp "$TEMPDIR/$PCH_SHEADER") /I $(cygpath -amp "$FCXXSS_DIR/include") /I $(cygpath -amp "$FCXXSS_DIR/root_ptr/include") /FI Windows.h $(cygpath -amp "$TEMPDIR/$TEMPFILE.pass3.cxx") $COMPILE $OUTPUT $PPOUTPUT $LIBRARY $LDFLAGS /EHa); then
+				if ($FCXXSS_CC $DEFINE $INCLUDE $ISYSTEM $OPT $CCFLAGS -Xclang $PCH_INCLUDE -Xclang $(cygpath -amp "$TEMPDIR/$PCH_SHEADER") /I $(cygpath -amp "$FCXXSS_DIR/include") /FI Windows.h $(cygpath -amp "$TEMPDIR/$TEMPFILE.pass3.cxx") $COMPILE $OUTPUT $PPOUTPUT $LIBRARY $LDFLAGS /EHa); then
 					exit 0
 				else
 					(>&2 printf "${RED}$0: intermediate files '$TEMPDIR/$TEMPFILE.pass?.cxx${NOCOLOR}\n")
