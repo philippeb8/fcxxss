@@ -36,5 +36,5 @@ http://releases.llvm.org/download.html
 
 
 Fornux Inc.  
-Copyright © 2019  
+Copyright (c) 2019  
 www.fornux.com  
