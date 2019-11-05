@@ -15,7 +15,7 @@ Fornux Inc.
 
 Example #1 (Cygwin):
 
-- Changing the directory: "cd fcxxss/"
+- Changing the directory: "cd \<INSTALL_DIR\>/"
 
 - Setting the path: "export PATH=$(pwd)/bin:$PATH"
 
@@ -28,7 +28,7 @@ Example #1 (Cygwin):
 
 Example #2 (CMD):
 
-- Changing the directory: "cd fcxxss\"
+- Changing the directory: "cd \<INSTALL_DIR\>\"
 
 - Setting the path: "set PATH=%CD%\bin;%PATH%"
 
@@ -54,7 +54,7 @@ Example #2 (CMD):
 
 Example #1:
 
-- Changing the directory: "cd fcxxss/"
+- Changing the directory: "cd \<INSTALL_DIR\>/"
 
 - Setting the path: "export PATH=$(pwd)/bin:$PATH"
 
@@ -71,7 +71,7 @@ Example #1:
 
 Example #2:
 
-- Changing the directory: "cd fcxxss/"
+- Changing the directory: "cd \<INSTALL_DIR\>/"
 
 - Setting the path: "export PATH=$(pwd)/bin:$PATH"
 
