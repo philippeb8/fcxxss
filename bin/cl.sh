@@ -7,4 +7,4 @@
 
 ROOTDIR=$(dirname "$0")/..
 
-$ROOTDIR/bin/clang-cl.exe $@
+$ROOTDIR/bin/clang-cl.exe "$@"
