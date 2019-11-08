@@ -9,13 +9,13 @@ usage()
 {
     echo "Usage: $0 [options] file"
     echo
-    echo "Fornux C++ Superset Source-to-Source Compiler 5.0"
+    echo "Fornux C++ Superset Source-to-Source Compiler 5.0 (for clang)"
 }
 
-CCFLAGS="-Wno-shadow -Wno-unused-parameter -Wno-unused-value -Wno-missing-prototypes -Wno-format-security -Wno-extern-initializer -Wno-gcc-compat -Wno-null-dereference -Wno-exit-time-destructors -Wno-unused-command-line-argument -DBOOST_ERROR_CODE_HEADER_ONLY"
-LDFLAGS="-lstdc++"
+CCFLAGS="-Wno-shadow -Wno-unused-parameter -Wno-unused-value -Wno-missing-prototypes -Wno-format-security -Wno-extern-initializer -Wno-gcc-compat -Wno-null-dereference -Wno-exit-time-destructors -Wno-unused-command-line-argument -DBOOST_ERROR_CODE_HEADER_ONLY -DBOOST_DISABLE_THREADS"
+LDFLAGS=""
 
-GETOPT=$(getopt -a -o vcSEwCsI:L:D:U:o:f:W::m:g::O::x:d:l:B:b:V: -l username:,compiler:,linker:,pipe,ansi,std:,traditional,traditional-cpp,pedantic,pedantic-errors,nostartfiles,nodefaultlibs,nostdlib,pie,rdynamic,static,static-libgcc,static-libstdc++,shared,shared-libgcc,symbolic,threads,pthreads,pthread,version,param:,idirafter:,include:,isystem:,c-isystem:,cxx-isystem:,imacros:,iprefix:,iwithprefix:,iwithprefixbefore:,isystem:,imultilib:,isysroot:,iquote:,specs:,sysroot:,param:,soname:,Xpreprocessor:,Xassembler:,Xlinker:,M,MM,MF:,MG,MP,MT:,MQ:,MD,MMD -n $0 -- "$@")
+GETOPT=$(getopt -a -o vcSEwCsI:L:D:U:o:f:W::m:g::O::x:d:l:B:b:V: -l username:,compiler:,linker:,pipe,ansi,std:,traditional,traditional-cpp,pedantic,pedantic-errors,nostartfiles,nodefaultlibs,nostdlib,pie,rdynamic,static,static-libgcc,static-libstdc++,shared,shared-libgcc,symbolic,threads,pthreads,pthread,version,param:,idirafter:,include:,isystem:,c-isystem:,cxx-isystem:,imacros:,iprefix:,iwithprefix:,iwithprefixbefore:,isystem:,imultilib:,isysroot:,iquote:,specs:,sysroot:,param:,soname:,Xpreprocessor:,Xassembler:,Xlinker:,Xclang:,M,MM,MF:,MG,MP,MT:,MQ:,MD,MMD -n $0 -- "$@")
 
 if [[ $? != 0 ]] ; then usage ; exit 1 ; fi
 
@@ -85,9 +85,10 @@ while true ; do
         --sysroot) OPT+="$1 $2 " ; shift 2 ;;
         --param) OPT+="$1 $2 " ; shift 2 ;;
         --soname) OPT+="-install_name $2 " ; shift 2 ;;
-        --Xpreprocessor) OPT+="$1 $2 " ; shift 2 ;;
-        --Xassembler) OPT+="$1 $2 " ; shift 2 ;;
-        --Xlinker) OPT+="$1 $2 " ; shift 2 ;;
+        --Xpreprocessor) OPT+="-Xpreprocessor $2 " ; shift 2 ;;
+        --Xassembler) OPT+="-Xassembler $2 " ; shift 2 ;;
+        --Xlinker) OPT+="-Xlinker $2 " ; shift 2 ;;
+        --Xclang) OPT+="-Xclang $2 " ; shift 2 ;;
         --M) PPOUTPUT+="-M " ; shift 1 ;;
         --MM) PPOUTPUT+="-MM " ; shift 1 ;;
         --MF) PPOUTPUT+="-MF $2 " ; shift 2 ;;
@@ -103,10 +104,14 @@ done
 
 #set -x
 
+RED='\033[1;31m'
+YELLOW='\033[1;33m'
+NOCOLOR='\033[0m'
+
 if [[ ! -z "$@" ]]; then
     case "$@" in
     *.c)
-        STD="-xc"
+        STD="-xc -std=c99"
         ;;
     *.cc|*.cxx|*.cpp|*.c++)
         STD="-xc++ -std=c++11"
@@ -125,49 +130,76 @@ if [[ ! -z "$@" ]]; then
             exit 1
         fi
 
-        if [[ -z "$FCXXSS_USERNAME" ]]; then
-            (>&2 echo "$0: username not set")
+        if $FCXXSS_CC --version | grep ^clang > /dev/null; then
+            PCH_INCLUDE=-include-pch
+            PCH_HEADER=fcxxss$DEBUG.hpp.pass1.pch
+            PCH_SHEADER=fcxxss$DEBUG.hpp.pass1.pch
+        elif $FCXXSS_CC --version | grep ^gcc > /dev/null; then
+            PCH_INCLUDE=-include
+            PCH_HEADER=fcxxss$DEBUG.hpp.pass1.gch
+            PCH_SHEADER=fcxxss$DEBUG.hpp
+        else
+            (>&2 printf "${RED}$0: couldn't determine compiler type${NOCOLOR}\n")
             exit 1
         fi
 
-        if $FCXXSS_CC -dM -E -x c /dev/null | grep __clang__ > /dev/null; then
-            PCH_INCLUDE=-include-pch
-            PCH_HEADER=fcxxss$DEBUG.h.pch
-            PCH_SHEADER=fcxxss$DEBUG.h.pch
+        TMP="/var/tmp"
+        TEMPLOCK="$(echo $(pwd) | md5sum | cut -d ' ' -f1)"
+        TEMPFILE="$@"
+        TEMPDIR="$TMP/fcxxss/$TEMPLOCK"
+        TEMPSUBDIR=$(dirname "$TEMPFILE")
+        
+        mkdir -p "$TEMPDIR/$TEMPSUBDIR"
+        
+        if [[ -z "$COMPILE" ]]; then
+            if [[ -z "$OUTPUT" ]]; then
+                OUTPUT+="-o $(echo $@ | sed 's/\..*$//')"
+            fi
         else
-            PCH_INCLUDE=-include
-            PCH_HEADER=fcxxss$DEBUG.h.gch
-            PCH_SHEADER=fcxxss$DEBUG.h
+            if [[ -z "$OUTPUT" ]]; then
+                OUTPUT+="-o $(echo $@ | sed 's/\..*$/.o/')"
+            fi
         fi
-
-		TEMPLOCK="$(echo $(pwd) | md5sum | cut -d ' ' -f1)"
-		TEMPFILE="$@.cxx"
-		TEMPDIR="/var/tmp/fcxxss/$TEMPLOCK"
-		TEMPSUBDIR=$(dirname "$TEMPFILE")
         
         (
             flock -s 200
 
-            mkdir -p "$TEMPDIR/$TEMPSUBDIR"
-            
             if [[ ! -f "$TEMPDIR/$PCH_HEADER" ]]; then
-                $FCXXSS_CC -xc++-header -std=c++11 $DEFINE $OPT $CCFLAGS -I "$FCXXSS_DIR/include" "$FCXXSS_DIR/include/fcxxss.h" -o "$TEMPDIR/$PCH_HEADER"
+            
+                printf "${YELLOW}>>> pass 1${NOCOLOR}\n"
+                if ($FCXXSS_CC $STD $DEFINE $OPT $CCFLAGS -cxx-isystem "$FCXXSS_DIR/usr/include" -xc++-header "$FCXXSS_DIR/usr/include/fcxxss.hpp" -o "$TEMPDIR/$PCH_HEADER"); then
+                    exit 0
+                else
+                    (>&2 printf "${RED}$0: intermediate file '$TEMPDIR/$PCH_HEADER${NOCOLOR}\n")
+                    exit 1
+                fi
             fi
-
-            if [[ ! -z "$COMPILE" ]] && [[ -z "$OUTPUT" ]]; then
-                OUTPUT+="-o $(echo $@ | sed 's/\..*$/.o/')"
-            fi
-        ) 200>"/var/$TEMPLOCK.fcxxss.lock"
+        ) 200>"$TMP/$TEMPLOCK.fcxxss.lock"
         
-        if $FCXXSS_CC $STD $DEFINE $INCLUDE $ISYSTEM -E "$@" | fcxxss -ast-print /dev/stdin -- $STD $ISYSTEM > "$TEMPDIR/$TEMPFILE" && $FCXXSS_CC -xc++ -std=c++11 $DEFINE $INCLUDE $ISYSTEM $OPT $CCFLAGS $PCH_INCLUDE "$TEMPDIR/$PCH_SHEADER" "$TEMPDIR/$TEMPFILE" $COMPILE "$OUTPUT" $PPOUTPUT $LIBRARY $LDFLAGS; then
-            exit 0
+        printf "${YELLOW}>>> pass 2${NOCOLOR}\n"
+        if ($FCXXSS_CC $STD $DEFINE $INCLUDE -cxx-isystem "$FCXXSS_DIR/include" -E "$@" > "$TEMPDIR/$TEMPFILE.pass2.cxx"); then
+        
+            printf "${YELLOW}>>> pass 3${NOCOLOR}\n"
+            if (fcxxss -ast-print "$TEMPDIR/$TEMPFILE.pass2.cxx" -- $ISYSTEM > "$TEMPDIR/$TEMPFILE.pass3.cxx"); then
+            
+                printf "${YELLOW}>>> pass 4${NOCOLOR}\n"
+                if ($FCXXSS_CC $STD $DEFINE $INCLUDE $ISYSTEM $OPT $CCFLAGS -Xclang $PCH_INCLUDE -Xclang "$TEMPDIR/$PCH_SHEADER" -cxx-isystem "$FCXXSS_DIR/usr/include" "$TEMPDIR/$TEMPFILE.pass3.cxx" $COMPILE $OUTPUT $PPOUTPUT $LIBRARY $LDFLAGS); then
+                    exit 0
+                else
+                    (>&2 printf "${RED}$0: intermediate files '$TEMPDIR/$TEMPFILE.pass?.cxx${NOCOLOR}\n")
+                    exit 1
+                fi
+            else
+                (>&2 printf "${RED}$0: intermediate file '$TEMPDIR/$TEMPFILE.pass3.cxx${NOCOLOR}\n")
+                exit 1
+            fi
         else
-            (>&2 echo "$0: intermediate file '$TEMPDIR/$TEMPFILE'")
+            (>&2 printf "${RED}$0: intermediate file '$TEMPDIR/$TEMPFILE.pass2.cxx${NOCOLOR}\n")
             exit 1
         fi
     else
         if [[ -z "$FCXXSS_LD" ]]; then
-            (>&2 echo "$0: linker not set")
+            (>&2 printf "${RED}$0: linker not set${NOCOLOR}\n")
             exit 1
         fi
 
@@ -175,7 +207,7 @@ if [[ ! -z "$@" ]]; then
     fi
 else
     if [[ -z "$FCXXSS_CC" ]]; then
-        (>&2 echo "$0: compiler not set")
+        (>&2 printf "${RED}$0: compiler not set${NOCOLOR}\n")
         exit 1
     fi
 

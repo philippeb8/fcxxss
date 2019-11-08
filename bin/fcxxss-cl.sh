@@ -138,64 +138,64 @@ if [[ ! -z "$@" ]]; then
             PCH_INCLUDE=-include
             PCH_HEADER=fcxxss$DEBUG.hpp.pass1.gch
             PCH_SHEADER=fcxxss$DEBUG.hpp
-		else
-			(>&2 printf "${RED}$0: couldn't determine compiler type${NOCOLOR}\n")
-			exit 1
+        else
+            (>&2 printf "${RED}$0: couldn't determine compiler type${NOCOLOR}\n")
+            exit 1
         fi
 
-		TEMPLOCK="$(echo $(pwd) | md5sum | cut -d ' ' -f1)"
+        TEMPLOCK="$(echo $(pwd) | md5sum | cut -d ' ' -f1)"
         TEMPFILE="$@"
         TEMPDIR="$TMP/fcxxss/$TEMPLOCK"
         TEMPSUBDIR=$(dirname "$TEMPFILE")
         
         mkdir -p "$TEMPDIR/$TEMPSUBDIR"
         
-		if [[ -z "$COMPILE" ]]; then
-			if [[ -z "$OUTPUT" ]]; then
-				OUTPUT+="-o $(echo $@ | sed 's/\..*$/.exe/')"
-			fi
-		else
-			if [[ -z "$OUTPUT" ]]; then
-				OUTPUT+="-o $(echo $@ | sed 's/\..*$/.o/')"
-			fi
-		fi
-		
-		(
+        if [[ -z "$COMPILE" ]]; then
+            if [[ -z "$OUTPUT" ]]; then
+                OUTPUT+="-o $(echo $@ | sed 's/\..*$/.exe/')"
+            fi
+        else
+            if [[ -z "$OUTPUT" ]]; then
+                OUTPUT+="-o $(echo $@ | sed 's/\..*$/.o/')"
+            fi
+        fi
+        
+        (
             flock -s 200
 
-			if [[ ! -f "$TEMPDIR/$PCH_HEADER" ]]; then
-			
-				printf "${YELLOW}>>> pass 1${NOCOLOR}\n"
+            if [[ ! -f "$TEMPDIR/$PCH_HEADER" ]]; then
+                
+                printf "${YELLOW}>>> pass 1${NOCOLOR}\n"
                 if ($FCXXSS_CC $DEFINE $OPT $CCFLAGS /I "$(cygpath -amp ""$FCXXSS_DIR/include"")" "$(cygpath -amp ""$FCXXSS_DIR/include/fcxxss.hpp"")" /EHa && mv fcxxss.pch "$TEMPDIR/$PCH_HEADER"); then
-					exit 0
-				else
-					(>&2 printf "${RED}$0: intermediate file '$TEMPDIR/$PCH_HEADER${NOCOLOR}\n")
-					exit 1
-				fi
+                    exit 0
+                else
+                    (>&2 printf "${RED}$0: intermediate file '$TEMPDIR/$PCH_HEADER${NOCOLOR}\n")
+                    exit 1
+                fi
             fi
         ) 200>"$TMP/$TEMPLOCK.fcxxss.lock"
         
-		printf "${YELLOW}>>> pass 2${NOCOLOR}\n"
-		if ($FCXXSS_CC $DEFINE $INCLUDE /I "$(cygpath -amp ""$FCXXSS_DIR/include"")" -E "$@" /EHa | ffldwuc -aup > "$TEMPDIR/$TEMPFILE.pass2.cxx" && test ${PIPESTATUS[0]} -eq 0); then
-		
-			printf "${YELLOW}>>> pass 3${NOCOLOR}\n"
-			if (fcxxss -ast-print "$TEMPDIR/$TEMPFILE.pass2.cxx" -- $ISYSTEM --driver-mode=cl /EHa | ffldwuc -amp > "$TEMPDIR/$TEMPFILE.pass3.cxx" && test ${PIPESTATUS[0]} -eq 0); then
-			
-				printf "${YELLOW}>>> pass 4${NOCOLOR}\n"
-				if ($FCXXSS_CC $DEFINE $INCLUDE $ISYSTEM $OPT $CCFLAGS -Xclang $PCH_INCLUDE -Xclang "$(cygpath -amp ""$TEMPDIR/$PCH_SHEADER"")" /I "$(cygpath -amp ""$FCXXSS_DIR/include"")" /FI Windows.h "$(cygpath -amp ""$TEMPDIR/$TEMPFILE.pass3.cxx"")" $COMPILE $OUTPUT $PPOUTPUT $LIBRARY $LDFLAGS /EHa); then
-					exit 0
-				else
-					(>&2 printf "${RED}$0: intermediate files '$TEMPDIR/$TEMPFILE.pass?.cxx${NOCOLOR}\n")
-					exit 1
-				fi
-			else
-				(>&2 printf "${RED}$0: intermediate file '$TEMPDIR/$TEMPFILE.pass3.cxx${NOCOLOR}\n")
-				exit 1
-			fi
-		else
-			(>&2 printf "${RED}$0: intermediate file '$TEMPDIR/$TEMPFILE.pass2.cxx${NOCOLOR}\n")
-			exit 1
-		fi
+        printf "${YELLOW}>>> pass 2${NOCOLOR}\n"
+        if ($FCXXSS_CC $DEFINE $INCLUDE /I "$(cygpath -amp ""$FCXXSS_DIR/include"")" -E "$@" /EHa | ffldwuc -aup > "$TEMPDIR/$TEMPFILE.pass2.cxx" && test ${PIPESTATUS[0]} -eq 0); then
+        
+            printf "${YELLOW}>>> pass 3${NOCOLOR}\n"
+            if (fcxxss -ast-print "$TEMPDIR/$TEMPFILE.pass2.cxx" -- $ISYSTEM --driver-mode=cl /EHa | ffldwuc -amp > "$TEMPDIR/$TEMPFILE.pass3.cxx" && test ${PIPESTATUS[0]} -eq 0); then
+            
+                printf "${YELLOW}>>> pass 4${NOCOLOR}\n"
+                if ($FCXXSS_CC $DEFINE $INCLUDE $ISYSTEM $OPT $CCFLAGS -Xclang $PCH_INCLUDE -Xclang "$(cygpath -amp ""$TEMPDIR/$PCH_SHEADER"")" /I "$(cygpath -amp ""$FCXXSS_DIR/include"")" /FI Windows.h "$(cygpath -amp ""$TEMPDIR/$TEMPFILE.pass3.cxx"")" $COMPILE $OUTPUT $PPOUTPUT $LIBRARY $LDFLAGS /EHa); then
+                    exit 0
+                else
+                    (>&2 printf "${RED}$0: intermediate files '$TEMPDIR/$TEMPFILE.pass?.cxx${NOCOLOR}\n")
+                    exit 1
+                fi
+            else
+                (>&2 printf "${RED}$0: intermediate file '$TEMPDIR/$TEMPFILE.pass3.cxx${NOCOLOR}\n")
+                exit 1
+            fi
+        else
+            (>&2 printf "${RED}$0: intermediate file '$TEMPDIR/$TEMPFILE.pass2.cxx${NOCOLOR}\n")
+            exit 1
+        fi
     else
         if [[ -z "$FCXXSS_LD" ]]; then
             (>&2 printf "${RED}$0: linker not set${NOCOLOR}\n")

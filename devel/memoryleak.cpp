@@ -21,11 +21,13 @@
 #if defined(_WIN32)
 #include <Windows.h>
 #include <Psapi.h>
+#define strdup _strdup
 #elif defined(__unix__) || defined(__unix) || defined(unix) || (defined(__APPLE__) && defined(__MACH__))
 #include <unistd.h>
 #include <sys/resource.h>
 #endif
 
+#include <string.h>
 #include <chrono>
 #include <iostream>
 #include <iomanip>
@@ -173,14 +175,14 @@ int main(int argc, char * argv_[])
     
     // STL container friendly:
     list<char *> l;
-    l.push_back(_strdup("node 1"));
-    l.push_back(_strdup("node 2"));
+    l.push_back(strdup("node 1"));
+    l.push_back(strdup("node 2"));
     l.push_back(l.front());
     
     cout << l.back() << endl;
     
     // Efficient memcpy() & memset():
-    char * s = _strdup("Test1... test2... this is a test");
+    char * s = strdup("Test1... test2... this is a test");
     
     cout << s << endl;
     
