@@ -180,7 +180,7 @@ if [[ ! -z "$@" ]]; then
         if ($FCXXSS_CC $STD $DEFINE $INCLUDE -cxx-isystem "$FCXXSS_DIR/include" -E "$@" > "$TEMPDIR/$TEMPFILE.pass2.cxx"); then
         
             printf "${YELLOW}>>> pass 3${NOCOLOR}\n"
-            if (fcxxss -ast-print "$TEMPDIR/$TEMPFILE.pass2.cxx" -- $ISYSTEM > "$TEMPDIR/$TEMPFILE.pass3.cxx"); then
+            if (fcxxss -ast-print "$TEMPDIR/$TEMPFILE.pass2.cxx" -- $STD $ISYSTEM > "$TEMPDIR/$TEMPFILE.pass3.cxx"); then
             
                 printf "${YELLOW}>>> pass 4${NOCOLOR}\n"
                 if ($FCXXSS_CC $STD $DEFINE $INCLUDE $ISYSTEM $OPT $CCFLAGS -Xclang $PCH_INCLUDE -Xclang "$TEMPDIR/$PCH_SHEADER" -cxx-isystem "$FCXXSS_DIR/usr/include" "$TEMPDIR/$TEMPFILE.pass3.cxx" $COMPILE $OUTPUT $PPOUTPUT $LIBRARY $LDFLAGS); then
