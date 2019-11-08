@@ -176,7 +176,7 @@ if [[ ! -z "$@" ]]; then
         ) 200>"$TMP/$TEMPLOCK.fcxxss.lock"
         
         printf "${YELLOW}>>> pass 2${NOCOLOR}\n"
-        if ($FCXXSS_CC $DEFINE $INCLUDE /I "$(cygpath -amp ""$FCXXSS_DIR/include"")" -E "$@" /EHa | ffldwuc -aup > "$TEMPDIR/$TEMPFILE.pass2.cxx" && test ${PIPESTATUS[0]} -eq 0); then
+        if ($FCXXSS_CC $DEFINE $INCLUDE -E "$@" /EHa | ffldwuc -aup > "$TEMPDIR/$TEMPFILE.pass2.cxx" && test ${PIPESTATUS[0]} -eq 0); then
         
             printf "${YELLOW}>>> pass 3${NOCOLOR}\n"
             if (fcxxss -ast-print "$TEMPDIR/$TEMPFILE.pass2.cxx" -- $ISYSTEM --driver-mode=cl /EHa | ffldwuc -amp > "$TEMPDIR/$TEMPFILE.pass3.cxx" && test ${PIPESTATUS[0]} -eq 0); then

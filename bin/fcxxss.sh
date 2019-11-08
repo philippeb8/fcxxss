@@ -177,7 +177,7 @@ if [[ ! -z "$@" ]]; then
         ) 200>"$TMP/$TEMPLOCK.fcxxss.lock"
         
         printf "${YELLOW}>>> pass 2${NOCOLOR}\n"
-        if ($FCXXSS_CC $STD $DEFINE $INCLUDE -cxx-isystem "$FCXXSS_DIR/include" -E "$@" > "$TEMPDIR/$TEMPFILE.pass2.cxx"); then
+        if ($FCXXSS_CC $STD $DEFINE $INCLUDE -E "$@" > "$TEMPDIR/$TEMPFILE.pass2.cxx"); then
         
             printf "${YELLOW}>>> pass 3${NOCOLOR}\n"
             if (fcxxss -ast-print "$TEMPDIR/$TEMPFILE.pass2.cxx" -- $STD $ISYSTEM > "$TEMPDIR/$TEMPFILE.pass3.cxx"); then
