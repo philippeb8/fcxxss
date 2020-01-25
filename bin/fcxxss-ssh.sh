@@ -166,7 +166,7 @@ if [[ ! -z "$@" ]]; then
 
             if [[ ! -f "$TEMPDIR/$PCH_HEADER" ]]; then
             
-                printf "${YELLOW}>>> pass 1${NOCOLOR}\n"
+                printf "$@: ${YELLOW}pass 1${NOCOLOR}\n"
                 if ($FCXXSS_CC $STD $DEFINE $OPT $CCFLAGS -cxx-isystem "$FCXXSS_DIR/usr/include" -xc++-header "$FCXXSS_DIR/usr/include/fcxxss.hpp" -o "$TEMPDIR/$PCH_HEADER"); then
                     exit 0
                 else
@@ -176,13 +176,13 @@ if [[ ! -z "$@" ]]; then
             fi
         ) 200>"$TMP/$TEMPLOCK.fcxxss.lock"
         
-        printf "${YELLOW}>>> pass 2${NOCOLOR}\n"
+        printf "$@: ${YELLOW}pass 2${NOCOLOR}\n"
         if ($FCXXSS_CC $STD $DEFINE $INCLUDE -E "$@" > "$TEMPDIR/$TEMPFILE.pass2.cxx"); then
         
-            printf "${YELLOW}>>> pass 3${NOCOLOR}\n"
+            printf "$@: ${YELLOW}pass 3${NOCOLOR}\n"
             if (ssh $FCXXSS_USERNAME@fcxxss.fornux.com -- $STD $ISYSTEM < "$TEMPDIR/$TEMPFILE.pass2.cxx" > "$TEMPDIR/$TEMPFILE.pass3.cxx"); then
             
-                printf "${YELLOW}>>> pass 4${NOCOLOR}\n"
+                printf "$@: ${YELLOW}pass 4${NOCOLOR}\n"
                 if ($FCXXSS_CC $STD $DEFINE $INCLUDE $ISYSTEM $OPT $CCFLAGS -Xclang $PCH_INCLUDE -Xclang "$TEMPDIR/$PCH_SHEADER" -cxx-isystem "$FCXXSS_DIR/usr/include" "$TEMPDIR/$TEMPFILE.pass3.cxx" $COMPILE $OUTPUT $PPOUTPUT $LIBRARY $LDFLAGS); then
                     exit 0
                 else
