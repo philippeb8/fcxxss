@@ -2,8 +2,14 @@
 #
 # Fornux C++ Superset Source-to-Source Compiler 5.0
 #
-# Copyright (c) Fornux Inc. 2019
+# Copyright (c) Fornux Inc. 2020
 #
+
+export FCXXSS_CC="clang++"
+export FCXXSS_DIR=$(dirname $0)/..
+export FCXXSS_UNGUARDED=$FCXXSS_DIR/unguarded.txt
+
+export PATH=$(dirname $0):$PATH
 
 usage() 
 {
@@ -180,7 +186,7 @@ if [[ ! -z "$@" ]]; then
         if ($FCXXSS_CC $STD $DEFINE $INCLUDE -E "$@" > "$TEMPDIR/$TEMPFILE.pass2.cxx"); then
         
             printf "$@: ${YELLOW}pass 3${NOCOLOR}\n"
-            if (fcxxss -ast-print "$TEMPDIR/$TEMPFILE.pass2.cxx" -- $STD $ISYSTEM > "$TEMPDIR/$TEMPFILE.pass3.cxx"); then
+            if ($FCXXSS_DIR/usr/bin/fcxxss -ast-print "$TEMPDIR/$TEMPFILE.pass2.cxx" -- $STD $ISYSTEM > "$TEMPDIR/$TEMPFILE.pass3.cxx"); then
             
                 printf "$@: ${YELLOW}pass 4${NOCOLOR}\n"
                 if ($FCXXSS_CC $STD $DEFINE $INCLUDE $ISYSTEM $OPT $CCFLAGS -Xclang $PCH_INCLUDE -Xclang "$TEMPDIR/$PCH_SHEADER" -cxx-isystem "$FCXXSS_DIR/usr/include" "$TEMPDIR/$TEMPFILE.pass3.cxx" $COMPILE $OUTPUT $PPOUTPUT $LIBRARY $LDFLAGS); then
