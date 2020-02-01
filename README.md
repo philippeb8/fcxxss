@@ -21,7 +21,7 @@ Example #1 (Cygwin):
 
 - Changing the directory: "cd devel/"
 
-- Running: "start-fcxxss-cl.sh memoryleak.cpp -O2"
+- Running: "fcxxss-cl.sh memoryleak.cpp -O2"
 
 - Executing: "./memoryleak.exe"
 
@@ -34,7 +34,7 @@ Example #2 (CMD):
 
 - Changing the directory: "cd devel\"
 
-- Running: "bash -c 'start-fcxxss-cl.sh memoryleak.cpp -O2'"
+- Running: "fcxxss-cl.bat memoryleak.cpp -O2"
 
 - Executing: ".\memoryleak.exe"
 
