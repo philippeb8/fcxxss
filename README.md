@@ -13,20 +13,7 @@ Fornux Inc.
 1) Shareware (Windows)
 
 
-Example #1 (Cygwin):
-
-- Changing the directory: "cd \<INSTALL_DIR\>/"
-
-- Setting the path: "export PATH=$(pwd)/bin:$PATH"
-
-- Changing the directory: "cd devel/"
-
-- Running: "fcxxss-cl.sh memoryleak.cpp -O2"
-
-- Executing: "./memoryleak.exe"
-
-
-Example #2 (CMD):
+Example #1 (CMD):
 
 - Changing the directory: "cd \<INSTALL_DIR\>\"
 
