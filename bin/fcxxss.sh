@@ -32,11 +32,11 @@ while true ; do
         -v) OPT+="$1 " ; shift 1 ;;
         -c) COMPILE+="$1 " ; shift 1 ;;
         -S) OPT+="$1 " ; shift 1 ;;
-        -E) OPT+="$1 -I $FCXXSS_DIR/include "; shift 1 ;;
+        -E) PREPROCESS+="$1 "; shift 1 ;;
         -w) OPT+="$1 " ; shift 1 ;;
         -C) OPT+="$1 " ; shift 1 ;;
         -s) OPT+="$1 " ; shift 1 ;;
-        -I) INCLUDE+="-iquote $2 " ; shift 2 ;;
+        -I) INCLUDE+="-isystem $2 " ; shift 2 ;;
         -L) OPT+="$1$2 " ; shift 2 ;;
         -D) DEFINE+="$1$2 " ; shift 2 ;;
         -U) OPT+="$1$2 " ; shift 2 ;;
@@ -120,7 +120,7 @@ if [[ ! -z "$@" ]]; then
         STD="-xc -std=c99"
         ;;
     *.cc|*.cxx|*.cpp|*.c++)
-        STD="-xc++ -std=c++11"
+        STD="-xc++ -std=c++14"
         ;;
     *.o|*.obj)
         ;;
@@ -183,13 +183,13 @@ if [[ ! -z "$@" ]]; then
         ) 200>"$TMP/$TEMPLOCK.fcxxss.lock"
         
         printf "$@: ${YELLOW}pass 2${NOCOLOR}\n"
-        if ($FCXXSS_CC $STD $DEFINE $INCLUDE -E "$@" > "$TEMPDIR/$TEMPFILE.pass2.cxx"); then
+        if ($FCXXSS_CC $STD $DEFINE $INCLUDE $ISYSTEM $OPT $CCFLAGS -E "$@" > "$TEMPDIR/$TEMPFILE.pass2.cxx"); then
         
             printf "$@: ${YELLOW}pass 3${NOCOLOR}\n"
             if ($FCXXSS_DIR/usr/bin/fcxxss -ast-print "$TEMPDIR/$TEMPFILE.pass2.cxx" -- $STD $ISYSTEM > "$TEMPDIR/$TEMPFILE.pass3.cxx"); then
             
                 printf "$@: ${YELLOW}pass 4${NOCOLOR}\n"
-                if ($FCXXSS_CC $STD $DEFINE $INCLUDE $ISYSTEM $OPT $CCFLAGS -Xclang $PCH_INCLUDE -Xclang "$TEMPDIR/$PCH_SHEADER" -cxx-isystem "$FCXXSS_DIR/usr/include" "$TEMPDIR/$TEMPFILE.pass3.cxx" $COMPILE $OUTPUT $PPOUTPUT $LIBRARY $LDFLAGS); then
+                if ($FCXXSS_CC $STD $DEFINE $INCLUDE $ISYSTEM $OPT $PREPROCESS $CCFLAGS -Xclang $PCH_INCLUDE -Xclang "$TEMPDIR/$PCH_SHEADER" -cxx-isystem "$FCXXSS_DIR/usr/include" "$TEMPDIR/$TEMPFILE.pass3.cxx" $COMPILE $OUTPUT $PPOUTPUT $LIBRARY $LDFLAGS); then
                     exit 0
                 else
                     (>&2 printf "${RED}$0: intermediate files '$TEMPDIR/$TEMPFILE.pass?.cxx${NOCOLOR}\n")
