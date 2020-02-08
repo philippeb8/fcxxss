@@ -76,16 +76,29 @@ struct node_base : public boost::detail::sp_counted_base
 {
     /** Tag used to enlist to @c node_proxy::node_list_ . */
     intrusive_list::node node_tag_;
-
-    node_base()
+    
+    node_base(size_t const size) : size_(size)
     {
     }
 
+    /**
+     *   @return		Pointee array of objects size.
+     */
+    
+    size_t size() const
+    { 
+        return size_; 
+    }
+    
     virtual ~node_base()
     {
     }
 
 protected:
+    /** Pointee size.*/
+    size_t const size_;
+    
+    
     virtual void dispose()
     {
     }
@@ -158,7 +171,7 @@ template <typename T>
     public:
         typedef T data_type;
 
-        node_element()
+        node_element(size_t const size = 1) : smart_ptr::detail::node_base(size)
         {
         }
 
@@ -193,7 +206,18 @@ template <typename T>
                 return p_; 
             }
         };
-
+        
+        
+        /**
+         *  @return		Pointee array of objects address.
+         */
+        
+        data_type * element()
+        { 
+            return reinterpret_cast<data_type *>(& elem_); 
+        }
+        
+        
     protected:
         /** Pointee object.*/
         typename std::aligned_storage<sizeof(data_type), alignof(data_type)>::type elem_;
@@ -208,7 +232,7 @@ template <>
     public:
         typedef int data_type;
 
-        node_element()
+        node_element(size_t const size = 1) : smart_ptr::detail::node_base(size)
         {
         }
 
@@ -244,6 +268,17 @@ template <>
             }
         };
 
+        
+        /**
+         *  @return		Pointee array of objects address.
+         */
+        
+        data_type * element()
+        { 
+            return reinterpret_cast<data_type *>(& elem_); 
+        }
+        
+        
     protected:
         /** Pointee object.*/
         typename std::aligned_storage<sizeof(data_type), alignof(data_type)>::type elem_;
@@ -262,6 +297,8 @@ template <typename T, typename PoolAllocator = pool_allocator<T> >
     public:
         typedef T data_type;
         typedef typename PoolAllocator::template rebind< node<T, PoolAllocator> >::other allocator_type;
+        
+        using node_element<T>::element;
 
 
         /**
@@ -427,7 +464,9 @@ template <typename T, int S, typename PoolAllocator>
         typedef T data_type[S];
         typedef std::array<T, S> destroy_data_type;
         typedef typename PoolAllocator::template rebind< node<T [S], PoolAllocator> >::other allocator_type;
-
+        
+        using node_element<T [S]>::element;
+        
         
         /**
             Initialization of a pointee object.
@@ -436,7 +475,8 @@ template <typename T, int S, typename PoolAllocator>
         */
         
         node() 
-        : a_(static_pool())
+        : node_element<T [S]>(S)
+        , a_(static_pool())
         {
             container::allocator_traits<allocator_type>::construct(a_, element());
         }
@@ -449,34 +489,27 @@ template <typename T, int S, typename PoolAllocator>
         */
         
         node(allocator_type const & a) 
-        : a_(a)
+        : node_element<T [S]>(S)
+        , a_(a)
         {
             container::allocator_traits<allocator_type>::construct(a_, element());
         }
 
         template <typename... Args>
             node(Args &&... args) 
-            : a_(static_pool())
+            : node_element<T [S]>(S)
+            , a_(static_pool())
             {
                 container::allocator_traits<allocator_type>::construct(a_, element(), std::forward<Args>(args)...);
             }
 
         template <typename... Args>
             node(allocator_type const & a, Args &&... args)
-            : a_(a)
+            : node_element<T [S]>(S)
+            , a_(a)
             {
                 container::allocator_traits<allocator_type>::construct(a_, element(), std::forward<Args>(args)...);
             }
-
-
-        /**
-            @return		Pointee object address.
-        */
-        
-        data_type * element()
-        { 
-            return reinterpret_cast<data_type *>(& elem_); 
-        }
 
 
         /**

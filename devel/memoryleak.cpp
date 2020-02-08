@@ -51,12 +51,16 @@ struct B : virtual A
 {
     int k;
     int l;
+    
+    virtual ~B() {}
 };
 
 struct C : virtual A
 {
     int m;
     int n;
+    
+    virtual ~C() {}
 };
 
 struct D : B
@@ -165,7 +169,7 @@ int main(int argc, char * argv_[])
     
     for (int i = 0; i < argc; ++ i)
         argv[i] = argv_[i];
-    
+
     // Lambda functions tests:
     list_node n;
     list_node m(n);
@@ -205,6 +209,12 @@ int main(int argc, char * argv_[])
         cout << e.what() << endl;
     }
 
+    // Polymorphism:
+    struct C * p = new list_node;
+    
+    if (dynamic_cast<B *>(p))
+        cout << "'p' is a 'B'" << endl;
+    
     // Proper cyclic memory leaks management:
     milliseconds before, after;
  
@@ -230,7 +240,7 @@ int main(int argc, char * argv_[])
         cout << "\rSpeed: " << setprecision(11) << i * 1000.0 / (after - before).count() << " loops / s; Memory usage: " << r_usage.ru_maxrss << " kilobytes" << flush;
 #endif
     }
-    
+
     // Templates:
     Dummy::Funny(8, 8);
     Dummy::Dummy<typename Dummy::Value<int, int>::value>(9, 9);

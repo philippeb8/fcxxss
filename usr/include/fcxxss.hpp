@@ -31,38 +31,46 @@ extern "C++"
 namespace fcxxss
 {
     
-inline boost::root_ptr<std::vector<char>> strdup(boost::node_proxy & __y, boost::root_ptr<std::vector<char>> p)
+inline boost::root_ptr<char> strdup(boost::node_proxy & __y, boost::root_ptr<char> p)
 {
     if (p)
-        return boost::root_ptr<std::vector<char>>(__y, "", new boost::node<std::vector<char>>(static_cast<char *>(p), static_cast<char *>(p) + ::strlen(p) + 1));
+        return boost::root_ptr<char>(__y(), "", boost::create<char>()(__y(), p, p + ::strlen(p) + 1));
     else
         throw std::out_of_range(std::string("\"") + p.name() + "\" null pointer");
 }
 
-inline boost::root_ptr<std::vector<char>> strndup(boost::node_proxy & __y, boost::root_ptr<std::vector<char>> p, std::size_t s)
+inline boost::root_ptr<wchar_t> wcsdup(boost::node_proxy & __y, boost::root_ptr<wchar_t> p)
 {
     if (p)
-        return boost::root_ptr<std::vector<char>>(__y, "", new boost::node<std::vector<char>>(static_cast<char *>(p), static_cast<char *>(p) + std::min(::strlen(p) + 1, s)));
+        return boost::root_ptr<wchar_t>(__y(), "", boost::create<wchar_t>()(__y(), p, p + ::wcslen(p) + 1));
+    else
+        throw std::out_of_range(std::string("\"") + p.name() + "\" null pointer");
+}
+
+inline boost::root_ptr<char> strndup(boost::node_proxy & __y, boost::root_ptr<char> p, std::size_t s)
+{
+    if (p)
+        return boost::root_ptr<char>(__y(), "", boost::create<char>()(__y(), p, p + std::min(::strlen(p) + 1, s)));
     else
         throw std::out_of_range(std::string("\"") + p.name() + "\" null pointer");
 }
 
 template <typename... Args>
-    inline int asprintf(boost::node_proxy & __y, boost::root_ptr<std::vector<boost::root_ptr<std::vector<char>>>> strp, boost::root_ptr<std::vector<char>> fmt, Args &&... args)
+    inline int asprintf(boost::node_proxy & __y, boost::root_ptr<boost::root_ptr<char>> strp, boost::root_ptr<char> fmt, Args &&... args)
     {
         std::string s = tfm::format(fmt, args...) + '\0';
         
-        * strp = new boost::node<std::vector<char>>(s.begin(), s.end());
+        * strp = new boost::node<char>(s.begin(), s.end());
         
         return s.size() - 1;
     }
     
-inline boost::root_ptr<std::vector<char>> memcpy(boost::node_proxy & __y, boost::root_ptr<std::vector<char>> d, boost::root_ptr<std::vector<char>> const s, size_t n)
+inline boost::root_ptr<char> memcpy(boost::node_proxy & __y, boost::root_ptr<char> d, boost::root_ptr<char> const s, size_t n)
 {
     if (d < s)
     {
-        char const * p = static_cast<char const *>(s);
-        char * q = static_cast<char *>(d);
+        char const * p = s;
+        char * q = d;
         
 #if defined(__i386__)
         asm volatile ("cld ; movl %3,%0 ; rep ; movsb": "+c" (n), "+S"(p), "+D"(q): "r"(n));
@@ -75,8 +83,8 @@ inline boost::root_ptr<std::vector<char>> memcpy(boost::node_proxy & __y, boost:
     }
     else if (d > s)
     {
-        char const * p = static_cast<char const *>(s) + n - 1;
-        char * q = static_cast<char *>(d) + n - 1;
+        char const * p = s + n - 1;
+        char * q = d + n - 1;
         
 #if defined(__i386__)
         asm volatile ("std ; movl %3,%0 ; rep ; movsb": "+c" (n), "+S"(p), "+D"(q): "r"(n));
@@ -91,9 +99,9 @@ inline boost::root_ptr<std::vector<char>> memcpy(boost::node_proxy & __y, boost:
     return d;
 }
     
-inline boost::root_ptr<std::vector<char>> memset(boost::node_proxy & __y, boost::root_ptr<std::vector<char>> d, char const v, size_t n)
+inline boost::root_ptr<char> memset(boost::node_proxy & __y, boost::root_ptr<char> d, char const v, size_t n)
 {
-    char * q = static_cast<char *>(d);
+    char * q = d;
     
 #if defined(__i386__)
     asm volatile ("cld ; movl %3,%0 ; rep ; stosb" : "+c" (n), "+D" (q) : "a" ((unsigned char) v), "r" (n));
