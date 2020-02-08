@@ -2,7 +2,7 @@
 #
 # Fornux C++ Superset Source-to-Source Compiler 5.0
 #
-# Copyright (c) Fornux Inc. 2019
+# Copyright (c) Fornux Inc. 2020
 #
 
 export FCXXSS_CC="clang-cl.exe"
@@ -32,11 +32,11 @@ while true ; do
         -v) OPT+="$1 " ; shift 1 ;;
         -c) COMPILE+="$1 " ; shift 1 ;;
         -S) OPT+="$1 " ; shift 1 ;;
-        -E) OPT+="$1 -I $FCXXSS_DIR/include "; shift 1 ;;
+        -E) PREPROCESS+="$1 "; shift 1 ;;
         -w) OPT+="$1 " ; shift 1 ;;
         -C) OPT+="$1 " ; shift 1 ;;
         -s) OPT+="$1 " ; shift 1 ;;
-        -I) INCLUDE+="-iquote $2 " ; shift 2 ;;
+        -I) INCLUDE+="-isystem $2 " ; shift 2 ;;
         -L) OPT+="$1$2 " ; shift 2 ;;
         -D) DEFINE+="$1$2 " ; shift 2 ;;
         -U) OPT+="$1$2 " ; shift 2 ;;
@@ -120,7 +120,7 @@ if [[ ! -z "$@" ]]; then
         STD="-xc -std=c99"
         ;;
     *.cc|*.cxx|*.cpp|*.c++)
-        STD="-xc++ -std=c++11"
+        STD="-xc++ -std=c++14"
         ;;
     *.o|*.obj)
         ;;
@@ -182,13 +182,13 @@ if [[ ! -z "$@" ]]; then
         ) 200>"$TMP/$TEMPLOCK.fcxxss.lock"
         
         printf "$@: ${YELLOW}pass 2${NOCOLOR}\n"
-        if ($FCXXSS_CC $DEFINE $INCLUDE -E "$@" /EHa | ffldwuc -aup > "$TEMPDIR/$TEMPFILE.pass2.cxx" && test ${PIPESTATUS[0]} -eq 0); then
+        if ($FCXXSS_CC $DEFINE $INCLUDE $ISYSTEM $OPT $CCFLAGS -E "$@" /EHa | ffldwuc -aup > "$TEMPDIR/$TEMPFILE.pass2.cxx" && test ${PIPESTATUS[0]} -eq 0); then
         
             printf "$@: ${YELLOW}pass 3${NOCOLOR}\n"
             if ($FCXXSS_DIR/bin/fcxxss.exe -ast-print "$TEMPDIR/$TEMPFILE.pass2.cxx" -- $ISYSTEM --driver-mode=cl /EHa | ffldwuc -amp > "$TEMPDIR/$TEMPFILE.pass3.cxx" && test ${PIPESTATUS[0]} -eq 0); then
             
                 printf "$@: ${YELLOW}pass 4${NOCOLOR}\n"
-                if ($FCXXSS_CC $DEFINE $INCLUDE $ISYSTEM $OPT $CCFLAGS -Xclang $PCH_INCLUDE -Xclang "$(cygpath -amp ""$TEMPDIR/$PCH_SHEADER"")" /I "$(cygpath -amp ""$FCXXSS_DIR/include"")" /FI Windows.h "$(cygpath -amp ""$TEMPDIR/$TEMPFILE.pass3.cxx"")" $COMPILE $OUTPUT $PPOUTPUT $LIBRARY $LDFLAGS /EHa); then
+                if ($FCXXSS_CC $DEFINE $INCLUDE $ISYSTEM $OPT $PREPROCESS $CCFLAGS -Xclang $PCH_INCLUDE -Xclang "$(cygpath -amp ""$TEMPDIR/$PCH_SHEADER"")" /I "$(cygpath -amp ""$FCXXSS_DIR/include"")" /FI Windows.h "$(cygpath -amp ""$TEMPDIR/$TEMPFILE.pass3.cxx"")" $COMPILE $OUTPUT $PPOUTPUT $LIBRARY $LDFLAGS /EHa); then
                     exit 0
                 else
                     (>&2 printf "${RED}$0: intermediate files '$TEMPDIR/$TEMPFILE.pass?.cxx${NOCOLOR}\n")
