@@ -2,18 +2,22 @@
 
     Fornux C++ Superset -- Example.
 
-    Outputs ('clang-cl' on Cygwin):
+    Outputs ('clang' on Linux):
 
-	foo
-	foo: 30
-	node 1
-	Test1... test2... this is a test
-	Test1Test1... t.. this is a test
-	Test1XXXXXXXXXX.. this is a test
-	Test1XXXXXXXXXX.. this is a test"s" (33) out of range [0, 33[
-	0# main in C:/cygwin64/home/phili_000/devel/fcxxss/devel/memoryleak.cpp
-
-	Speed: 185520.52545 loops / s; Memory usage: 2336 kilobytes
+    foo
+    foo: 30
+    node 1
+    Test1... test2... this is a test
+    Test1Test1... t.. this is a test
+    Test1XXXXXXXXXX.. this is a test
+    Test1XXXXXXXXXX.. this is a test"s" (33) out of range [0, 33[
+    #0 main in devel/memoryleak.cpp
+    
+    "p" is not a buffer
+    #0 main in devel/memoryleak.cpp
+    
+    'p' is a 'B'
+    Speed: 255195.25066 loops / s; Memory usage: 6824 k
     
  */
 
@@ -211,6 +215,16 @@ int main(int argc, char * argv_[])
 
     // Polymorphism:
     struct C * p = new list_node;
+        
+    // Buffer overflow implicit detection:
+    try
+    {
+        p++;
+    }
+    catch (exception& e)
+    {
+        cout << e.what() << endl;
+    }
     
     if (dynamic_cast<B *>(p))
         cout << "'p' is a 'B'" << endl;

@@ -902,6 +902,13 @@ template <typename T>
         template <typename V>
             T & operator [] (V n)
             {
+                if (base::base1::po_)
+                {
+                    std::stringstream out;
+                    out << "\"" << name() << "\" is not a buffer\n";
+                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                    throw std::out_of_range(out.str());
+                }
                 if (base::base2::po_)
                     if (pi_ + n < base::base2::po_->data() || base::base2::po_->data() + base::base2::po_->size() <= pi_ + n)
                     {
@@ -917,6 +924,13 @@ template <typename T>
         template <typename V>
             T const & operator [] (V n) const
             {
+                if (base::base1::po_)
+                {
+                    std::stringstream out;
+                    out << "\"" << name() << "\" is not a buffer\n";
+                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                    throw std::out_of_range(out.str());
+                }
                 if (base::base2::po_)
                     if (pi_ + n < base::base2::po_->data() || base::base2::po_->data() + base::base2::po_->size() <= pi_ + n)
                     {
@@ -931,29 +945,11 @@ template <typename T>
 
         T & operator * () const
         {
-            if (base::base2::po_)
-                if (pi_ < base::base2::po_->data() || base::base2::po_->data() + base::base2::po_->size() <= pi_)
-                {
-                    std::stringstream out;
-                    out << "\"" << name() << "\" (" << pi_ - base::base2::po_->data() << ") out of range [0, " << base::base2::po_->size() << "[\n";
-                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
-                    throw std::out_of_range(out.str());
-                }
-                
             return * pi_;
         }
 
         T * operator -> () const
         {
-            if (base::base2::po_)
-                if (pi_ < base::base2::po_->data() || base::base2::po_->data() + base::base2::po_->size() <= pi_)
-                {
-                    std::stringstream out;
-                    out << "\"" << name() << "\" (" << pi_ - base::base2::po_->data() << ") out of range [0, " << base::base2::po_->size() << "[\n";
-                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
-                    throw std::out_of_range(out.str());
-                }
-                
             return pi_;
         }
         
@@ -979,16 +975,65 @@ template <typename T>
         
         root_ptr & operator ++ ()
         {
+            if (base::base1::po_)
+            {
+                std::stringstream out;
+                out << "\"" << name() << "\" is not a buffer\n";
+                node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                throw std::out_of_range(out.str());
+            }
+            if (base::base2::po_)
+                if ((pi_ + 1) < base::base2::po_->data() || base::base2::po_->data() + base::base2::po_->size() <= (pi_ + 1))
+                {
+                    std::stringstream out;
+                    out << "\"" << name() << "\" (" << (pi_ + 1) - base::base2::po_->data() << ") out of range [0, " << base::base2::po_->size() << "[\n";
+                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                    throw std::out_of_range(out.str());
+                }
+                
+
             return ++ pi_, * this;
         }
 
         root_ptr & operator -- ()
         {
+            if (base::base1::po_)
+            {
+                std::stringstream out;
+                out << "\"" << name() << "\" is not a buffer\n";
+                node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                throw std::out_of_range(out.str());
+            }
+            if (base::base2::po_)
+                if ((pi_ - 1) < base::base2::po_->data() || base::base2::po_->data() + base::base2::po_->size() <= (pi_ - 1))
+                {
+                    std::stringstream out;
+                    out << "\"" << name() << "\" (" << (pi_ - 1) - base::base2::po_->data() << ") out of range [0, " << base::base2::po_->size() << "[\n";
+                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                    throw std::out_of_range(out.str());
+                }
+                
             return -- pi_, * this;
         }
         
         root_ptr operator ++ (int)
         {
+            if (base::base1::po_)
+            {
+                std::stringstream out;
+                out << "\"" << name() << "\" is not a buffer\n";
+                node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                throw std::out_of_range(out.str());
+            }
+            if (base::base2::po_)
+                if ((pi_ + 1) < base::base2::po_->data() || base::base2::po_->data() + base::base2::po_->size() <= (pi_ + 1))
+                {
+                    std::stringstream out;
+                    out << "\"" << name() << "\" (" << (pi_ + 1) - base::base2::po_->data() << ") out of range [0, " << base::base2::po_->size() << "[\n";
+                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                    throw std::out_of_range(out.str());
+                }
+                
             root_ptr temp(* this);
             
             return ++ pi_, temp;
@@ -996,6 +1041,22 @@ template <typename T>
 
         root_ptr operator -- (int)
         {
+            if (base::base1::po_)
+            {
+                std::stringstream out;
+                out << "\"" << name() << "\" is not a buffer\n";
+                node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                throw std::out_of_range(out.str());
+            }
+            if (base::base2::po_)
+                if ((pi_ - 1) < base::base2::po_->data() || base::base2::po_->data() + base::base2::po_->size() <= (pi_ - 1))
+                {
+                    std::stringstream out;
+                    out << "\"" << name() << "\" (" << (pi_ - 1) - base::base2::po_->data() << ") out of range [0, " << base::base2::po_->size() << "[\n";
+                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                    throw std::out_of_range(out.str());
+                }
+                
             root_ptr temp(* this);
             
             return -- pi_, temp;
@@ -1014,18 +1075,66 @@ template <typename T>
         template <typename V>
             root_ptr operator + (V i) const
             {
+                if (base::base1::po_)
+                {
+                    std::stringstream out;
+                    out << "\"" << name() << "\" is not a buffer\n";
+                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                    throw std::out_of_range(out.str());
+                }
+                if (base::base2::po_)
+                    if ((pi_ + i) < base::base2::po_->data() || base::base2::po_->data() + base::base2::po_->size() <= (pi_ + i))
+                    {
+                        std::stringstream out;
+                        out << "\"" << name() << "\" (" << (pi_ + i) - base::base2::po_->data() << ") out of range [0, " << base::base2::po_->size() << "[\n";
+                        node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                        throw std::out_of_range(out.str());
+                    }
+                    
                 return root_ptr(proxy(), "", pi_ + i);
             }
 
         template <typename V>
             root_ptr operator - (V i) const
             {
+                if (base::base1::po_)
+                {
+                    std::stringstream out;
+                    out << "\"" << name() << "\" is not a buffer\n";
+                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                    throw std::out_of_range(out.str());
+                }
+                if (base::base2::po_)
+                    if ((pi_ - i) < base::base2::po_->data() || base::base2::po_->data() + base::base2::po_->size() <= (pi_ - i))
+                    {
+                        std::stringstream out;
+                        out << "\"" << name() << "\" (" << (pi_ - i) - base::base2::po_->data() << ") out of range [0, " << base::base2::po_->size() << "[\n";
+                        node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                        throw std::out_of_range(out.str());
+                    }
+                    
                 return root_ptr(proxy(), "", pi_ - i);
             }
 
         template <typename V>
             root_ptr & operator += (V i)
             {
+                if (base::base1::po_)
+                {
+                    std::stringstream out;
+                    out << "\"" << name() << "\" is not a buffer\n";
+                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                    throw std::out_of_range(out.str());
+                }
+                if (base::base2::po_)
+                    if ((pi_ + i) < base::base2::po_->data() || base::base2::po_->data() + base::base2::po_->size() <= (pi_ + i))
+                    {
+                        std::stringstream out;
+                        out << "\"" << name() << "\" (" << (pi_ + i) - base::base2::po_->data() << ") out of range [0, " << base::base2::po_->size() << "[\n";
+                        node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                        throw std::out_of_range(out.str());
+                    }
+                    
                 pi_ += i;
                 
                 return * this;
@@ -1034,6 +1143,22 @@ template <typename T>
         template <typename V>
             root_ptr & operator -= (V i)
             {
+                if (base::base1::po_)
+                {
+                    std::stringstream out;
+                    out << "\"" << name() << "\" is not a buffer\n";
+                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                    throw std::out_of_range(out.str());
+                }
+                if (base::base2::po_)
+                    if ((pi_ - i) < base::base2::po_->data() || base::base2::po_->data() + base::base2::po_->size() <= (pi_ - i))
+                    {
+                        std::stringstream out;
+                        out << "\"" << name() << "\" (" << (pi_ - i) - base::base2::po_->data() << ") out of range [0, " << base::base2::po_->size() << "[\n";
+                        node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                        throw std::out_of_range(out.str());
+                    }
+                    
                 pi_ -= i;
                 
                 return * this;
