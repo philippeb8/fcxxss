@@ -1361,20 +1361,20 @@ template <typename T>
     struct create
     {
         template <typename... Args>
-            inline node<std::vector<T>> * operator () (node_proxy & __y, size_t s) const
+            inline node<std::vector<T>> * operator () (node_proxy & __y, size_t s, Args &&... args) const
             {
-                return new node<std::vector<T>>(s, construct<T>()(__y, ""));
+                return new node<std::vector<T>>(s, construct<T>()(__y, "", std::forward<Args>(args)...));
             }
             
-            inline node<std::vector<T>> * operator () (node_proxy & __y, T const * begin, T const * end) const
-            {
-                return new node<std::vector<T>>(begin, end);
-            }
-            
-            inline node<std::vector<T>> * operator () (node_proxy & __y, std::initializer_list<T> const & l) const
-            {
-                return new node<std::vector<T>>(l);
-            }
+        inline node<std::vector<T>> * from_range(node_proxy & __y, T const * begin, T const * end) const
+        {
+            return new node<std::vector<T>>(begin, end);
+        }
+        
+        inline node<std::vector<T>> * from_initializer(node_proxy & __y, std::initializer_list<T> const & l) const
+        {
+            return new node<std::vector<T>>(l);
+        }
     };
 
 
@@ -1404,7 +1404,7 @@ template <typename T, size_t S>
         }
     
         template <typename... U>
-            root_array(boost::node_proxy & __y, U const &... pp) : base(__y, "", boost::create<T>()(__y, std::initializer_list<T>{static_cast<T>(pp)...}))
+            root_array(boost::node_proxy & __y, U const &... pp) : base(__y, "", boost::create<T>().from_initializer(__y, std::initializer_list<T>{static_cast<T>(pp)...}))
             {
             }
             

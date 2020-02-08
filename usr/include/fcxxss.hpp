@@ -34,7 +34,7 @@ namespace fcxxss
 inline boost::root_ptr<char> strdup(boost::node_proxy & __y, boost::root_ptr<char> p)
 {
     if (p)
-        return boost::root_ptr<char>(__y(), "", boost::create<char>()(__y(), p, p + ::strlen(p) + 1));
+        return boost::root_ptr<char>(__y(), "", boost::create<char>().from_range(__y(), p, p + ::strlen(p) + 1));
     else
         throw std::out_of_range(std::string("\"") + p.name() + "\" null pointer");
 }
@@ -42,7 +42,7 @@ inline boost::root_ptr<char> strdup(boost::node_proxy & __y, boost::root_ptr<cha
 inline boost::root_ptr<wchar_t> wcsdup(boost::node_proxy & __y, boost::root_ptr<wchar_t> p)
 {
     if (p)
-        return boost::root_ptr<wchar_t>(__y(), "", boost::create<wchar_t>()(__y(), p, p + ::wcslen(p) + 1));
+        return boost::root_ptr<wchar_t>(__y(), "", boost::create<wchar_t>().from_range(__y(), p, p + ::wcslen(p) + 1));
     else
         throw std::out_of_range(std::string("\"") + p.name() + "\" null pointer");
 }
@@ -50,7 +50,7 @@ inline boost::root_ptr<wchar_t> wcsdup(boost::node_proxy & __y, boost::root_ptr<
 inline boost::root_ptr<char> strndup(boost::node_proxy & __y, boost::root_ptr<char> p, std::size_t s)
 {
     if (p)
-        return boost::root_ptr<char>(__y(), "", boost::create<char>()(__y(), p, p + std::min(::strlen(p) + 1, s)));
+        return boost::root_ptr<char>(__y(), "", boost::create<char>().from_range(__y(), p, p + std::min(::strlen(p) + 1, s)));
     else
         throw std::out_of_range(std::string("\"") + p.name() + "\" null pointer");
 }

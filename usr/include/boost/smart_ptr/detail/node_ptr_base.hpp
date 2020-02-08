@@ -74,13 +74,13 @@ template <typename T>
 
         template <typename V, typename PoolAllocator>
             node_ptr_common(node<V, PoolAllocator> * p) 
-            : po_(p->element())
+            : po_(reinterpret_cast<value_type *>(p->element()))
             {
             }
 
         template <typename V>
             node_ptr_common(node_ptr_common<V> const & p) 
-            : po_(p.share())
+            : po_(reinterpret_cast<value_type *>(p.share()))
             {
             }
 

@@ -77,28 +77,15 @@ struct node_base : public boost::detail::sp_counted_base
     /** Tag used to enlist to @c node_proxy::node_list_ . */
     intrusive_list::node node_tag_;
     
-    node_base(size_t const size) : size_(size)
+    node_base()
     {
     }
 
-    /**
-     *   @return		Pointee array of objects size.
-     */
-    
-    size_t size() const
-    { 
-        return size_; 
-    }
-    
     virtual ~node_base()
     {
     }
 
 protected:
-    /** Pointee size.*/
-    size_t const size_;
-    
-    
     virtual void dispose()
     {
     }
@@ -171,7 +158,7 @@ template <typename T>
     public:
         typedef T data_type;
 
-        node_element(size_t const size = 1) : smart_ptr::detail::node_base(size)
+        node_element()
         {
         }
 
@@ -232,7 +219,7 @@ template <>
     public:
         typedef int data_type;
 
-        node_element(size_t const size = 1) : smart_ptr::detail::node_base(size)
+        node_element()
         {
         }
 
@@ -475,7 +462,7 @@ template <typename T, int S, typename PoolAllocator>
         */
         
         node() 
-        : node_element<T [S]>(S)
+        : node_element<T [S]>()
         , a_(static_pool())
         {
             container::allocator_traits<allocator_type>::construct(a_, element());
@@ -489,7 +476,7 @@ template <typename T, int S, typename PoolAllocator>
         */
         
         node(allocator_type const & a) 
-        : node_element<T [S]>(S)
+        : node_element<T [S]>()
         , a_(a)
         {
             container::allocator_traits<allocator_type>::construct(a_, element());
@@ -497,7 +484,7 @@ template <typename T, int S, typename PoolAllocator>
 
         template <typename... Args>
             node(Args &&... args) 
-            : node_element<T [S]>(S)
+            : node_element<T [S]>()
             , a_(static_pool())
             {
                 container::allocator_traits<allocator_type>::construct(a_, element(), std::forward<Args>(args)...);
@@ -505,7 +492,7 @@ template <typename T, int S, typename PoolAllocator>
 
         template <typename... Args>
             node(allocator_type const & a, Args &&... args)
-            : node_element<T [S]>(S)
+            : node_element<T [S]>()
             , a_(a)
             {
                 container::allocator_traits<allocator_type>::construct(a_, element(), std::forward<Args>(args)...);
