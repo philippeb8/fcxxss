@@ -463,7 +463,7 @@ class node_ptr : public smart_ptr::detail::node_ptr_common<T>, public smart_ptr:
         template <typename V>
             node_ptr(node_ptr<V> const & p, smart_ptr::detail::static_cast_tag const & t)
             : base1(static_cast<smart_ptr::detail::node_ptr_common<V> const &>(p), t)
-            , base2()
+            , base2(static_cast<smart_ptr::detail::node_ptr_common<V> const &>(p), t)
             , px_(p.px_)
             {
             }
@@ -478,7 +478,7 @@ class node_ptr : public smart_ptr::detail::node_ptr_common<T>, public smart_ptr:
         template <typename V>
             node_ptr(node_ptr<V> const & p, smart_ptr::detail::dynamic_cast_tag const & t)
             : base1(static_cast<smart_ptr::detail::node_ptr_common<V> const &>(p), t)
-            , base2()
+            , base2(static_cast<smart_ptr::detail::node_ptr_common<V> const &>(p), t)
             , px_(p.px_)
             {
             }
@@ -838,6 +838,13 @@ template <typename T>
             , pi_(static_cast<T *>(p.pi_))
             , pn_(n)
             {
+                if (p.base::base2::po_)
+                {
+                    std::stringstream out;
+                    out << "\"" << p.name() << "\" is not a single object\n";
+                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                    throw std::out_of_range(out.str());
+                }
             }
 
 
@@ -853,6 +860,13 @@ template <typename T>
             , pi_(dynamic_cast<T *>(p.pi_))
             , pn_(n)
             {
+                if (p.base::base2::po_)
+                {
+                    std::stringstream out;
+                    out << "\"" << p.name() << "\" is not a single object\n";
+                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                    throw std::out_of_range(out.str());
+                }
             }
 
 
@@ -1535,7 +1549,8 @@ template <typename T, size_t S>
             
         ~root_array()
         {
-            base::reset(nullptr);
+            base::base1::reset(nullptr);
+            base::base2::reset(nullptr);
         }
     };    
 

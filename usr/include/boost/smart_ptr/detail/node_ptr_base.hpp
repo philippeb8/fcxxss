@@ -111,9 +111,9 @@ template <typename T>
         template <typename V>
             node_ptr_common & operator = (node_ptr_common<V> const & p)
             {
-                if (po_ != reinterpret_cast<value_type *>(p.po_))
+                if (po_ != p.po_)
                 {
-                    reset(reinterpret_cast<value_type *>(p.share()));
+                    reset(p.share());
                 }
                 return * this;
             }

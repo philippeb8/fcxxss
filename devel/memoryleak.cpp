@@ -216,7 +216,7 @@ int main(int argc, char * argv_[])
     // Polymorphism:
     struct C * p = new list_node;
         
-    // Buffer overflow implicit detection:
+    // Not-a-buffer implicit detection:
     try
     {
         p++;
