@@ -18,6 +18,7 @@
 #define BOOST_DETAIL_ROOFOF_HPP_INCLUDED
 
 
+#include <memory>
 #include <boost/type_traits/remove_const.hpp>
 #include <boost/type_traits/remove_volatile.hpp>
 #include <boost/type_traits/is_polymorphic.hpp>
@@ -104,7 +105,7 @@ template <typename T, typename U>
                     (
                         static_cast<void *>
                         (
-                            const_cast<unqualified_type *>(& ((T *)(0)->* q))
+                            const_cast<unqualified_type *>(std::addressof((T *)(0)->*q))
                         )
                     ) 
                     - 

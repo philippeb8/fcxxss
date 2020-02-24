@@ -348,6 +348,7 @@ template <typename T, typename PoolAllocator = pool_allocator<T> >
         }
 
 
+#if 0
         /**
             Allocates a new @c node using the static copy of @c PoolAllocator to be used.
             
@@ -413,6 +414,7 @@ template <typename T, typename PoolAllocator = pool_allocator<T> >
         {
             a.deallocate(static_cast<node *>(p), 1);
         }
+#endif
 
         
     private:
@@ -519,6 +521,7 @@ template <typename T, int S, typename PoolAllocator>
         }
 
         
+#if 0
         /**
             Allocates a new @c node using the static copy of @c PoolAllocator to be used.
             
@@ -584,6 +587,8 @@ template <typename T, int S, typename PoolAllocator>
         {
             a.deallocate(static_cast<node *>(p), 1);
         }
+#endif
+
 
     private:
         using node_element<T [S]>::elem_;

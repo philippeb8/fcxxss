@@ -3,7 +3,7 @@
     Fornux C++ Superset -- Example.
 
     Outputs ('clang' on Linux):
-
+    
     foo
     foo: 30
     node 1
@@ -11,13 +11,16 @@
     Test1Test1... t.. this is a test
     Test1XXXXXXXXXX.. this is a test
     Test1XXXXXXXXXX.. this is a test"s" (33) out of range [0, 33[
-    #0 main in devel/memoryleak.cpp
+    #0 main in memoryleak.cpp line 210
+    #1 main in memoryleak.cpp line 207
+    #2 main in memoryleak.cpp line 172
     
     "p" is not a buffer
-    #0 main in devel/memoryleak.cpp
+    #0 main in memoryleak.cpp line 223
+    #1 main in memoryleak.cpp line 172
     
     'p' is a 'B'
-    Speed: 255195.25066 loops / s; Memory usage: 6824 k
+    Speed: 265099.70674 loops / s; Memory usage: 5660 kilobytes^C
     
  */
 
@@ -118,7 +121,7 @@ test * foo()
 {
     cout << __func__ << endl;
     
-    return (test *) 0;
+    return nullptr;
 }
 
 namespace Dummy
@@ -244,9 +247,9 @@ int main(int argc, char * argv_[])
         
         // stats
         after = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
-		
+
 #if defined(_WIN32)
-		cout << "\rSpeed: " << setprecision(11) << i * 1000.0 / (after - before).count() << " loops / s; Memory usage: " << GetMemoryUsage(GetCurrentProcessId()) / 1024 << " kilobytes" << flush;
+        cout << "\rSpeed: " << setprecision(11) << i * 1000.0 / (after - before).count() << " loops / s; Memory usage: " << GetMemoryUsage(GetCurrentProcessId()) / 1024 << " kilobytes" << flush;
 #elif defined(__unix__) || defined(__unix) || defined(unix) || (defined(__APPLE__) && defined(__MACH__))
         struct rusage r_usage;
         getrusage(RUSAGE_SELF, & r_usage);

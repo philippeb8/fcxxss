@@ -87,6 +87,9 @@ class node_proxy
     /** Function. */
     char const * function_;
     
+    /** Line. */
+    unsigned line_;
+    
     /** Parent. */
     node_proxy * parent_;
     
@@ -115,8 +118,9 @@ public:
         Initialization of a single @c node_proxy .
     */
 
-    node_proxy(char const * file, char const * function, size_t depth = 0, node_proxy * parent = nullptr) : file_(file), function_(function), depth_(depth), parent_(parent), destroying_(false)
+    node_proxy(char const * file, char const * function, unsigned line, size_t depth = 0, node_proxy * parent = nullptr) : file_(file), function_(function), line_(line), depth_(depth), parent_(parent), destroying_(false)
     {
+        * top_node_proxy() = this;
     }
     
     
@@ -131,7 +135,7 @@ public:
     static std::ostream & stacktrace(std::ostream & out, node_proxy * p)
     {
         for (size_t depth = 0; p && p->depth_; ++ depth, p = p->parent_)
-            out << '#' << depth << ' ' << p->function_ << " in " << p->file_ << '\n';
+            out << '#' << depth << ' ' << p->function_ << " in " << p->file_ << " line " << p->line_<< '\n';
         
         return out;
     }
@@ -161,6 +165,8 @@ public:
     ~node_proxy()
     {
         reset();
+
+        * top_node_proxy() = parent();
     }
     
     
@@ -230,9 +236,8 @@ public:
         Initialization of a single @c stack_node_proxy .
     */
 
-    stack_node_proxy(char const * file, char const * function, node_proxy & __y) : node_proxy(file, function, __y.depth() + 1, & __y)
+    stack_node_proxy(char const * file, char const * function, unsigned line, node_proxy & __y) : node_proxy(file, function, line, __y.depth() + 1, & __y)
     {
-        * top_node_proxy() = this;
     }
     
     
@@ -242,7 +247,6 @@ public:
     
     ~stack_node_proxy()
     {
-        * top_node_proxy() = parent();
     }
 };
 
@@ -250,6 +254,12 @@ public:
 template <typename T>
     class root_ptr;
 
+template <>
+    class root_ptr<void>;
+    
+template <>
+    class root_ptr<std::nullptr_t>;
+    
 template <typename T, size_t S>
     class root_array;
 
@@ -257,22 +267,42 @@ template <typename T, size_t S>
 BOOST_TTI_HAS_STATIC_MEMBER_FUNCTION(__proxy)
 
 
-template <typename T, bool = has_static_member_function___proxy<T, T const & (node_proxy &, T const &)>::value>
+template <typename T, bool = has_static_member_function___proxy<T, T const * (node_proxy &, T const *)>::value>
     struct proxy
     {
-        inline T const & operator () (node_proxy & __y, T const & po) const
+        inline T const * operator () (node_proxy & __y, T const * po) const
         { 
             return po; 
+        }
+    };
+
+template <>
+    struct proxy<void *, false>
+    {
+        inline void * const * operator () (node_proxy & __y, void * const * po)
+        {
+            return po;
+        }
+    };
+
+template <typename T>
+    struct proxy<T *, false>
+    {
+        inline T * const * operator () (node_proxy & __y, T * const * po)
+        {
+            proxy<T>()(__y, * po);
+            
+            return po;
         }
     };
 
 template <typename T, size_t S>
     struct proxy<T [S], false>
     {
-        inline T (& operator () (node_proxy & __y, T (& po)[S]) const)[S]
+        inline T (* operator () (node_proxy & __y, T (* const po)[S]) const) [S]
         {
-            for (T * i = po; i != po + S; ++ i)
-                proxy<T>()(__y, * i);
+            for (T * i = * po; i != * po + S; ++ i)
+                proxy<T>()(__y, i);
             
             return po;
         }
@@ -281,10 +311,10 @@ template <typename T, size_t S>
 template <typename T>
     struct proxy<std::vector<T>, false>
     {
-        inline std::vector<T> const & operator () (node_proxy & __y, std::vector<T> const & po) const
+        inline std::vector<T> const * operator () (node_proxy & __y, std::vector<T> const * po) const
         {
-            for (typename std::vector<T>::const_iterator i = po.begin(); i != po.end(); ++ i)
-                proxy<T>()(__y, * i);
+            for (typename std::vector<T>::const_iterator i = po->begin(); i != po->end(); ++ i)
+                proxy<T>()(__y, &* i);
             
             return po;
         }
@@ -293,7 +323,7 @@ template <typename T>
 template <>
     struct proxy<std::vector<void>, false>
     {
-        inline std::vector<void> const & operator () (node_proxy & __y, std::vector<void> const & po) const
+        inline std::vector<void> const * operator () (node_proxy & __y, std::vector<void> const * po) const
         {
             return po;
         }
@@ -302,9 +332,9 @@ template <>
 template <typename T>
     struct proxy<root_ptr<T>, false>
     {
-        inline root_ptr<T> const & operator () (node_proxy & x, root_ptr<T> const & po) const
+        inline root_ptr<T> const * operator () (node_proxy & x, root_ptr<T> const * po) const
         {
-            const_cast<root_ptr<T> &>(po).proxy(x);
+            po->proxy(& x);
             
             return po;
         }
@@ -313,9 +343,9 @@ template <typename T>
 template <typename T, size_t S>
     struct proxy<root_array<T, S>, false>
     {
-        inline root_array<T, S> const & operator () (node_proxy & x, root_array<T, S> const & po) const
+        inline root_array<T, S> const * operator () (node_proxy & x, root_array<T, S> const * po) const
         {
-            const_cast<root_array<T, S> &>(po).proxy(x);
+            const_cast<root_array<T, S> *>(po)->proxy(x);
             
             return po;
         }
@@ -324,26 +354,20 @@ template <typename T, size_t S>
 template <typename T>
     struct proxy<T, true>
     {
-        inline T const & operator () (node_proxy & __y, T const & po) const
+        inline T const * operator () (node_proxy & __y, T const * po) const
         { 
-            T::__proxy(__y, const_cast<T &>(po));
+            T::__proxy(__y, const_cast<T *>(po));
             
             return po;
         }
     };
-    
-template <typename T>
-    inline T & make_proxy(node_proxy & __y, T & po)
-    {
-        return const_cast<T &>(proxy<T>()(__y, po));
-    }
 
 template <typename T>
     inline T const & make_proxy(node_proxy & __y, T const & po)
-    {
-        return proxy<T>()(__y, po);
+    { 
+        return * proxy<T>()(__y, & po);
     }
-    
+
     
 /**
     Deterministic region based memory manager.
@@ -361,15 +385,13 @@ class node_ptr : public smart_ptr::detail::node_ptr_common<T>, public smart_ptr:
         
     protected:
         /** Reference to the @c node_proxy node @c node_ptr<> belongs to. */
-        node_proxy * px_;
+        mutable node_proxy * px_;
         
 
     public:
         typedef smart_ptr::detail::node_ptr_common<T> base1;
         typedef smart_ptr::detail::node_ptr_common<std::vector<T>> base2;
         
-        using base1::reset;
-        using base2::reset;
         
         /**
             Initialization of a pointer.
@@ -383,22 +405,6 @@ class node_ptr : public smart_ptr::detail::node_ptr_common<T>, public smart_ptr:
         , px_(& x)
         {
         }
-
-
-        /**
-            Initialization of a pointer.
-
-            @param  x   Reference to a @c node_proxy the pointer belongs to.
-            @param  p New pointee object to iterate.
-        */
-
-        template <typename V>
-            explicit node_ptr(node_proxy & x, V * p)
-            : base1(p)
-            , base2(p)
-            , px_(& x)
-            {
-            }
 
 
         /**
@@ -463,7 +469,7 @@ class node_ptr : public smart_ptr::detail::node_ptr_common<T>, public smart_ptr:
         template <typename V>
             node_ptr(node_ptr<V> const & p, smart_ptr::detail::static_cast_tag const & t)
             : base1(static_cast<smart_ptr::detail::node_ptr_common<V> const &>(p), t)
-            , base2(static_cast<smart_ptr::detail::node_ptr_common<V> const &>(p), t)
+            , base2()
             , px_(p.px_)
             {
             }
@@ -478,7 +484,7 @@ class node_ptr : public smart_ptr::detail::node_ptr_common<T>, public smart_ptr:
         template <typename V>
             node_ptr(node_ptr<V> const & p, smart_ptr::detail::dynamic_cast_tag const & t)
             : base1(static_cast<smart_ptr::detail::node_ptr_common<V> const &>(p), t)
-            , base2(static_cast<smart_ptr::detail::node_ptr_common<V> const &>(p), t)
+            , base2()
             , px_(p.px_)
             {
             }
@@ -504,13 +510,11 @@ class node_ptr : public smart_ptr::detail::node_ptr_common<T>, public smart_ptr:
             @param  p   New pointer expected to be null.
         */
 
-        node_ptr & operator = (T * p)
+        node_ptr & operator = (std::nullptr_t)
         {
-            if (! p)
-                reset(nullptr);
-            else
-                throw std::out_of_range("illegal pointer");                
-
+            base1::reset(nullptr);
+            base2::reset(nullptr);
+            
             return * this;
         }
 
@@ -586,14 +590,13 @@ class node_ptr : public smart_ptr::detail::node_ptr_common<T>, public smart_ptr:
                 mutex::scoped_lock scoped_lock(node_proxy::static_mutex());
 #endif
                 
-                if (px_->depth() < p.px_->depth())
-                    const_cast<node_ptr<V> &>(p).proxy(* px_);
-
+                if (p.px_->depth() < px_->depth())
+                    proxy(p.px_);
+                else if (px_->depth() < p.px_->depth())
+                    p.proxy(px_);
+                
                 base1::operator = (static_cast<base1 const &>(p));
                 base2::operator = (static_cast<base2 const &>(p));
-                
-                if (p.px_->depth() < px_->depth())
-                    proxy(* p.px_);
                 
                 return * this;
             }
@@ -674,23 +677,23 @@ class node_ptr : public smart_ptr::detail::node_ptr_common<T>, public smart_ptr:
             Sets associated proxy for the entire branch of this pointer.
         */
         
-        void proxy(node_proxy & x)
+        void proxy(node_proxy * x) const
         {
-            if (x.depth() < px_->depth())
+            if (x->depth() < px_->depth())
             {
-                px_ = & x;
+                px_ = x;
 
                 if (base1::po_)
                 {
                     base1::header()->node_tag_.erase();
                     px_->init(base1::header());
-                    boost::proxy<T>()(x, * base1::po_);
+                    boost::proxy<T>()(* x, base1::po_);
                 }
                 if (base2::po_)
                 {
                     base2::header()->node_tag_.erase();
                     px_->init(base2::header());
-                    boost::proxy<std::vector<T>>()(x, * base2::po_);
+                    boost::proxy<std::vector<T>>()(* x, base2::po_);
                 }
             }
         }
@@ -741,8 +744,8 @@ class node_ptr : public smart_ptr::detail::node_ptr_common<T>, public smart_ptr:
     };
 
 
-template <typename T>
-    class root_ptr : public node_ptr<T>
+template <>
+    class root_ptr<std::nullptr_t> : public node_ptr<std::nullptr_t>
     {
         template <typename> friend class root_ptr;
         
@@ -752,221 +755,29 @@ template <typename T>
         template <typename V> friend root_ptr<V const> const_pointer_cast(root_ptr<V> const & p);
         template <typename V> friend root_ptr<V> const_pointer_cast(root_ptr<V const> const & p);
         
-        typedef node_ptr<T> base;
+        typedef node_ptr<std::nullptr_t> base;
         
     protected:
         /** Iterator. */
-        T * pi_;
+        std::nullptr_t * pi_;
         char const * const pn_;
 
     public:
         typedef typename base::value_type value_type;
 
-        using base::proxy;
-        using base::reset;
 
-
-        root_ptr(root_ptr const & p)
-        : base(p)
-        , pi_(p.pi_)
-        , pn_(p.pn_)
-        {
-        }
-
-        template <typename V>
-            root_ptr(root_ptr<V> const & p)
-            : base(p)
-            , pi_(p.pi_)
-            , pn_(p.pn_)
-            {
-            }
-            
-        root_ptr(node_proxy & x, char const * n) 
+        root_ptr(node_proxy & x, char const * n, std::nullptr_t p)
         : base(x)
-        , pi_(nullptr)
+        , pi_(p)
         , pn_(n)
         {
         }
-
-        root_ptr(node_proxy & x, char const * n, T const * p)
-        : base(x)
-        , pi_(const_cast<T *>(p))
-        , pn_(n)
-        {
-        }
-
-        template <size_t S>
-            root_ptr(node_proxy & x, char const * n, T const (& a)[S])
-            : base(x)
-            , pi_(const_cast<T *>(a))
-            , pn_(n)
-            {
-            }
-
-        template <typename V, typename PoolAllocator>
-            root_ptr(node_proxy & x, char const * n, node<V, PoolAllocator> * p) 
-            : base(x, p)
-            , pi_(p->element())
-            , pn_(n)
-            {
-            }
-
-        template <typename V, typename PoolAllocator>
-            root_ptr(node_proxy & x, char const * n, node<std::vector<V>, PoolAllocator> * p) 
-            : base(x, p)
-            , pi_(p->element()->data())
-            , pn_(n)
-            {
-            }
-
-            root_ptr(node_proxy & x, char const * n, root_ptr const & p) 
-            : base(p)
-            , pi_(p.pi_)
-            , pn_(n)
-            {
-            }
-            
-        /**
-            Initialization of a pointer.
-
-            @param  p New pointer to manage.
-        */
-
-        template <typename V>
-            root_ptr(root_ptr<V> const & p, char const * n, smart_ptr::detail::static_cast_tag const & t)
-            : base(p, t)
-            , pi_(static_cast<T *>(p.pi_))
-            , pn_(n)
-            {
-                if (p.base::base2::po_)
-                {
-                    std::stringstream out;
-                    out << "\"" << p.name() << "\" is not a single object\n";
-                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
-                    throw std::out_of_range(out.str());
-                }
-            }
-
-
-        /**
-            Initialization of a pointer.
-
-            @param  p New pointer to manage.
-        */
-
-        template <typename V>
-            root_ptr(root_ptr<V> const & p, char const * n, smart_ptr::detail::dynamic_cast_tag const & t)
-            : base(p, t)
-            , pi_(dynamic_cast<T *>(p.pi_))
-            , pn_(n)
-            {
-                if (p.base::base2::po_)
-                {
-                    std::stringstream out;
-                    out << "\"" << p.name() << "\" is not a single object\n";
-                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
-                    throw std::out_of_range(out.str());
-                }
-            }
-
 
         char const * name() const
         {
             return pn_;
         }
 
-        root_ptr & operator = (T const * p)
-        {
-            pi_ = const_cast<T *>(p);
-            
-            return * this;
-        }
-        
-        template <typename V>
-            root_ptr & operator = (V const * p)
-            {
-                pi_ = const_cast<V *>(p);
-                
-                return * this;
-            }
-
-        template <typename V, typename PoolAllocator>
-            root_ptr & operator = (node<V, PoolAllocator> * p)
-            {
-                pi_ = p->element();
-                
-                return static_cast<root_ptr &>(base::operator = (p));
-            }
-
-        template <typename V, typename PoolAllocator>
-            root_ptr & operator = (node<std::vector<V>, PoolAllocator> * p)
-            {
-                pi_ = p->element()->data();
-                
-                return static_cast<root_ptr &>(base::operator = (p));
-            }
-
-            root_ptr & operator = (root_ptr const & p)
-            {
-                pi_ = p.pi_;
-                
-                return static_cast<root_ptr &>(base::operator = (p));
-            }
-
-        template <typename V>
-            T & operator [] (V n)
-            {
-                if (base::base1::po_)
-                {
-                    std::stringstream out;
-                    out << "\"" << name() << "\" is not a buffer\n";
-                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
-                    throw std::out_of_range(out.str());
-                }
-                if (base::base2::po_)
-                    if (pi_ + n < base::base2::po_->data() || base::base2::po_->data() + base::base2::po_->size() <= pi_ + n)
-                    {
-                        std::stringstream out;
-                        out << "\"" << name() << "\" (" << n << ") out of range [0, " << base::base2::po_->size() << "[\n";
-                        node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
-                        throw std::out_of_range(out.str());
-                    }
-                
-                return * (pi_ + n); 
-            }
-
-        template <typename V>
-            T const & operator [] (V n) const
-            {
-                if (base::base1::po_)
-                {
-                    std::stringstream out;
-                    out << "\"" << name() << "\" is not a buffer\n";
-                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
-                    throw std::out_of_range(out.str());
-                }
-                if (base::base2::po_)
-                    if (pi_ + n < base::base2::po_->data() || base::base2::po_->data() + base::base2::po_->size() <= pi_ + n)
-                    {
-                        std::stringstream out;
-                        out << "\"" << name() << "\" (" << n << ") out of range [0, " << base::base2::po_->size() << "[\n";
-                        node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
-                        throw std::out_of_range(out.str());
-                    }
-                
-                return * (pi_ + n); 
-            }
-
-        T & operator * () const
-        {
-            return * pi_;
-        }
-
-        T * operator -> () const
-        {
-            return pi_;
-        }
-        
         operator bool () const
         {
             return pi_ != 0;
@@ -976,207 +787,11 @@ template <typename T>
         {
             return pi_ == 0;
         }
-
-        operator T * ()
+        
+        operator std::nullptr_t * () const
         {
             return pi_;
         }
-
-        operator T const * () const
-        {
-            return pi_;
-        }
-        
-        root_ptr & operator ++ ()
-        {
-            if (base::base1::po_)
-            {
-                std::stringstream out;
-                out << "\"" << name() << "\" is not a buffer\n";
-                node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
-                throw std::out_of_range(out.str());
-            }
-            if (base::base2::po_)
-                if ((pi_ + 1) < base::base2::po_->data() || base::base2::po_->data() + base::base2::po_->size() <= (pi_ + 1))
-                {
-                    std::stringstream out;
-                    out << "\"" << name() << "\" (" << (pi_ + 1) - base::base2::po_->data() << ") out of range [0, " << base::base2::po_->size() << "[\n";
-                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
-                    throw std::out_of_range(out.str());
-                }
-                
-
-            return ++ pi_, * this;
-        }
-
-        root_ptr & operator -- ()
-        {
-            if (base::base1::po_)
-            {
-                std::stringstream out;
-                out << "\"" << name() << "\" is not a buffer\n";
-                node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
-                throw std::out_of_range(out.str());
-            }
-            if (base::base2::po_)
-                if ((pi_ - 1) < base::base2::po_->data() || base::base2::po_->data() + base::base2::po_->size() <= (pi_ - 1))
-                {
-                    std::stringstream out;
-                    out << "\"" << name() << "\" (" << (pi_ - 1) - base::base2::po_->data() << ") out of range [0, " << base::base2::po_->size() << "[\n";
-                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
-                    throw std::out_of_range(out.str());
-                }
-                
-            return -- pi_, * this;
-        }
-        
-        root_ptr operator ++ (int)
-        {
-            if (base::base1::po_)
-            {
-                std::stringstream out;
-                out << "\"" << name() << "\" is not a buffer\n";
-                node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
-                throw std::out_of_range(out.str());
-            }
-            if (base::base2::po_)
-                if ((pi_ + 1) < base::base2::po_->data() || base::base2::po_->data() + base::base2::po_->size() <= (pi_ + 1))
-                {
-                    std::stringstream out;
-                    out << "\"" << name() << "\" (" << (pi_ + 1) - base::base2::po_->data() << ") out of range [0, " << base::base2::po_->size() << "[\n";
-                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
-                    throw std::out_of_range(out.str());
-                }
-                
-            root_ptr temp(* this);
-            
-            return ++ pi_, temp;
-        }
-
-        root_ptr operator -- (int)
-        {
-            if (base::base1::po_)
-            {
-                std::stringstream out;
-                out << "\"" << name() << "\" is not a buffer\n";
-                node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
-                throw std::out_of_range(out.str());
-            }
-            if (base::base2::po_)
-                if ((pi_ - 1) < base::base2::po_->data() || base::base2::po_->data() + base::base2::po_->size() <= (pi_ - 1))
-                {
-                    std::stringstream out;
-                    out << "\"" << name() << "\" (" << (pi_ - 1) - base::base2::po_->data() << ") out of range [0, " << base::base2::po_->size() << "[\n";
-                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
-                    throw std::out_of_range(out.str());
-                }
-                
-            root_ptr temp(* this);
-            
-            return -- pi_, temp;
-        }
-        
-        size_t operator + (root_ptr const & o) const
-        {
-            return pi_ + o.pi_;
-        }
-
-        size_t operator - (root_ptr const & o) const
-        {
-            return pi_ - o.pi_;
-        }
-        
-        template <typename V>
-            root_ptr operator + (V i) const
-            {
-                if (base::base1::po_)
-                {
-                    std::stringstream out;
-                    out << "\"" << name() << "\" is not a buffer\n";
-                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
-                    throw std::out_of_range(out.str());
-                }
-                if (base::base2::po_)
-                    if ((pi_ + i) < base::base2::po_->data() || base::base2::po_->data() + base::base2::po_->size() <= (pi_ + i))
-                    {
-                        std::stringstream out;
-                        out << "\"" << name() << "\" (" << (pi_ + i) - base::base2::po_->data() << ") out of range [0, " << base::base2::po_->size() << "[\n";
-                        node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
-                        throw std::out_of_range(out.str());
-                    }
-                    
-                return root_ptr(proxy(), "", pi_ + i);
-            }
-
-        template <typename V>
-            root_ptr operator - (V i) const
-            {
-                if (base::base1::po_)
-                {
-                    std::stringstream out;
-                    out << "\"" << name() << "\" is not a buffer\n";
-                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
-                    throw std::out_of_range(out.str());
-                }
-                if (base::base2::po_)
-                    if ((pi_ - i) < base::base2::po_->data() || base::base2::po_->data() + base::base2::po_->size() <= (pi_ - i))
-                    {
-                        std::stringstream out;
-                        out << "\"" << name() << "\" (" << (pi_ - i) - base::base2::po_->data() << ") out of range [0, " << base::base2::po_->size() << "[\n";
-                        node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
-                        throw std::out_of_range(out.str());
-                    }
-                    
-                return root_ptr(proxy(), "", pi_ - i);
-            }
-
-        template <typename V>
-            root_ptr & operator += (V i)
-            {
-                if (base::base1::po_)
-                {
-                    std::stringstream out;
-                    out << "\"" << name() << "\" is not a buffer\n";
-                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
-                    throw std::out_of_range(out.str());
-                }
-                if (base::base2::po_)
-                    if ((pi_ + i) < base::base2::po_->data() || base::base2::po_->data() + base::base2::po_->size() <= (pi_ + i))
-                    {
-                        std::stringstream out;
-                        out << "\"" << name() << "\" (" << (pi_ + i) - base::base2::po_->data() << ") out of range [0, " << base::base2::po_->size() << "[\n";
-                        node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
-                        throw std::out_of_range(out.str());
-                    }
-                    
-                pi_ += i;
-                
-                return * this;
-            }
-
-        template <typename V>
-            root_ptr & operator -= (V i)
-            {
-                if (base::base1::po_)
-                {
-                    std::stringstream out;
-                    out << "\"" << name() << "\" is not a buffer\n";
-                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
-                    throw std::out_of_range(out.str());
-                }
-                if (base::base2::po_)
-                    if ((pi_ - i) < base::base2::po_->data() || base::base2::po_->data() + base::base2::po_->size() <= (pi_ - i))
-                    {
-                        std::stringstream out;
-                        out << "\"" << name() << "\" (" << (pi_ - i) - base::base2::po_->data() << ") out of range [0, " << base::base2::po_->size() << "[\n";
-                        node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
-                        throw std::out_of_range(out.str());
-                    }
-                    
-                pi_ -= i;
-                
-                return * this;
-            }
         
         template <typename V>
             bool operator == (root_ptr<V> const & o) const
@@ -1190,43 +805,19 @@ template <typename T>
                 return pi_ != o.pi_;
             }
 
-        template <typename V>
-            bool operator < (root_ptr<V> const & o) const
-            {
-                return pi_ < o.pi_;
-            }
-
-        template <typename V>
-            bool operator > (root_ptr<V> const & o) const
-            {
-                return pi_ > o.pi_;
-            }
-
-        template <typename V>
-            bool operator <= (root_ptr<V> const & o) const
-            {
-                return pi_ <= o.pi_;
-            }
-
-        template <typename V>
-            bool operator >= (root_ptr<V> const & o) const
-            {
-                return pi_ >= o.pi_;
-            }
-
         friend std::ostream & operator << (std::ostream & os, root_ptr const & o) 
         {
-            return os << o.operator T const * ();
+            return os << o.operator std::nullptr_t * ();
         }
         
         ~root_ptr()
         {
             //if (po_ && ! cyclic() && header()->use_count() == 1)
-            //    BOOST_LOG_TRIVIAL(info) << "\"" << pn_ << "\":" << boost::stacktrace::stacktrace(1, 1);
+            //    BOOSstd::nullptr_t_LOG_std::nullptr_tRIVIAL(info) << "\"" << pn_ << "\":" << boost::stacktrace::stacktrace(1, 1);
         }
     };
-
-
+    
+    
 template <>
     class root_ptr<void> : public node_ptr<void>
     {
@@ -1248,9 +839,6 @@ template <>
     public:
         typedef typename base::value_type value_type;
 
-        using base::proxy;
-        using base::reset;
-
 
         root_ptr(root_ptr const & p)
         : base(p)
@@ -1267,6 +855,13 @@ template <>
             {
             }
             
+            root_ptr(root_ptr<std::nullptr_t> const & p)
+            : base(p.proxy())
+            , pi_(nullptr)
+            , pn_(p.pn_)
+            {
+            }
+            
         root_ptr(node_proxy & x, char const * n) 
         : base(x)
         , pi_(nullptr)
@@ -1274,6 +869,29 @@ template <>
         {
         }
 
+        root_ptr(node_proxy & x, char const * n, std::nullptr_t p)
+        : base(x)
+        , pi_(p)
+        , pn_(n)
+        {
+        }
+        
+        template <typename V>
+            root_ptr(node_proxy & x, char const * n, V * p)
+            : base(x)
+            , pi_(p)
+            , pn_(n)
+            {
+            }
+
+        template <typename V>
+            root_ptr(node_proxy & x, char const * n, V const * p)
+            : base(x)
+            , pi_(const_cast<V *>(p))
+            , pn_(n)
+            {
+            }
+        
         template <typename V, typename PoolAllocator>
             root_ptr(node_proxy & x, char const * n, node<V, PoolAllocator> * p) 
             : base(x, p)
@@ -1332,11 +950,11 @@ template <>
             return pn_;
         }
 
-        root_ptr & operator = (void const * p)
+        root_ptr & operator = (std::nullptr_t)
         {
-            pi_ = const_cast<void *>(p);
+            pi_ = nullptr;
             
-            return * this;
+            return static_cast<root_ptr &>(base::operator = (nullptr));
         }
         
         template <typename V>
@@ -1352,7 +970,7 @@ template <>
             {
                 pi_ = p->element();
                 
-                return static_cast<root_ptr &>(base::operator = (p));
+                return static_cast<root_ptr &>(base::template operator = <V, PoolAllocator>(p));
             }
 
         template <typename V, typename PoolAllocator>
@@ -1360,14 +978,14 @@ template <>
             {
                 pi_ = p->element()->data();
                 
-                return static_cast<root_ptr &>(base::operator = (p));
+                return static_cast<root_ptr &>(base::template operator = <V, PoolAllocator>(p));
             }
 
             root_ptr & operator = (root_ptr const & p)
             {
                 pi_ = p.pi_;
                 
-                return static_cast<root_ptr &>(base::operator = (p));
+                return static_cast<root_ptr &>(base::template operator = <void>(p));
             }
 
         operator bool () const
@@ -1380,15 +998,479 @@ template <>
             return pi_ == 0;
         }
 
-        operator void * ()
+        operator void * () const
         {
             return pi_;
         }
 
-        operator void const * () const
+        template <typename V>
+            bool operator == (root_ptr<V> const & o) const
+            {
+                return pi_ == o.pi_;
+            }
+
+        template <typename V>
+            bool operator != (root_ptr<V> const & o) const
+            {
+                return pi_ != o.pi_;
+            }
+
+            bool operator == (root_ptr<std::nullptr_t> const & o) const
+            {
+                return pi_ == nullptr;
+            }
+
+            bool operator != (root_ptr<std::nullptr_t> const & o) const
+            {
+                return pi_ != nullptr;
+            }
+            
+        template <typename V>
+            bool operator < (root_ptr<V> const & o) const
+            {
+                return pi_ < o.pi_;
+            }
+
+        template <typename V>
+            bool operator > (root_ptr<V> const & o) const
+            {
+                return pi_ > o.pi_;
+            }
+
+        template <typename V>
+            bool operator <= (root_ptr<V> const & o) const
+            {
+                return pi_ <= o.pi_;
+            }
+
+        template <typename V>
+            bool operator >= (root_ptr<V> const & o) const
+            {
+                return pi_ >= o.pi_;
+            }
+
+        friend std::ostream & operator << (std::ostream & os, root_ptr const & o) 
+        {
+            return os << o.operator void * ();
+        }
+        
+        ~root_ptr()
+        {
+            //if (po_ && ! cyclic() && header()->use_count() == 1)
+            //    BOOSvoid_LOG_voidRIVIAL(info) << "\"" << pn_ << "\":" << boost::stacktrace::stacktrace(1, 1);
+        }
+    };
+
+
+template <typename T>
+    class root_ptr : public node_ptr<T>
+    {
+        template <typename> friend class root_ptr;
+        
+        template <typename U, typename V> friend U static_pointer_cast(V const & p);
+        template <typename U, typename V> friend U dynamic_pointer_cast(V const & p);
+        template <typename U, typename V> friend U reinterpret_pointer_cast(V const & p);
+        template <typename V> friend root_ptr<V const> const_pointer_cast(root_ptr<V> const & p);
+        template <typename V> friend root_ptr<V> const_pointer_cast(root_ptr<V const> const & p);
+        
+        typedef node_ptr<T> base;
+        
+    protected:
+        /** Iterator. */
+        T * pi_;
+        char const * const pn_;
+
+    public:
+        typedef typename base::value_type value_type;
+
+
+        root_ptr(root_ptr const & p)
+        : base(p)
+        , pi_(p.pi_)
+        , pn_(p.pn_)
+        {
+        }
+
+        template <typename V>
+            root_ptr(root_ptr<V> const & p)
+            : base(p)
+            , pi_(p.pi_)
+            , pn_(p.pn_)
+            {
+            }
+
+            root_ptr(root_ptr<std::nullptr_t> const & p)
+            : base(p.proxy())
+            , pi_(nullptr)
+            , pn_(p.pn_)
+            {
+            }
+            
+        root_ptr(node_proxy & x, char const * n) 
+        : base(x)
+        , pi_(nullptr)
+        , pn_(n)
+        {
+        }
+
+        root_ptr(node_proxy & x, char const * n, std::nullptr_t p)
+        : base(x)
+        , pi_(p)
+        , pn_(n)
+        {
+        }
+        
+        template <typename V>
+            root_ptr(node_proxy & x, char const * n, V * p)
+            : base(x)
+            , pi_(p)
+            , pn_(n)
+            {
+            }
+
+        template <typename V>
+            root_ptr(node_proxy & x, char const * n, V const * p)
+            : base(x)
+            , pi_(const_cast<V *>(p))
+            , pn_(n)
+            {
+            }
+        
+        template <typename V, typename PoolAllocator>
+            root_ptr(node_proxy & x, char const * n, node<V, PoolAllocator> * p) 
+            : base(x, p)
+            , pi_(p->element())
+            , pn_(n)
+            {
+            }
+
+        template <typename V, typename PoolAllocator>
+            root_ptr(node_proxy & x, char const * n, node<std::vector<V>, PoolAllocator> * p) 
+            : base(x, p)
+            , pi_(p->element()->data())
+            , pn_(n)
+            {
+            }
+
+            root_ptr(node_proxy & x, char const * n, root_ptr const & p) 
+            : base(p)
+            , pi_(p.pi_)
+            , pn_(n)
+            {
+            }
+            
+        /**
+            Initialization of a pointer.
+
+            @param  p New pointer to manage.
+        */
+
+        template <typename V>
+            root_ptr(root_ptr<V> const & p, char const * n, smart_ptr::detail::static_cast_tag const & t)
+            : base(p, t)
+            , pi_(static_cast<T *>(p.pi_))
+            , pn_(n)
+            {
+                if (p.base::base2::po_)
+                {
+                    std::stringstream out;
+                    out << "\"" << p.name() << "\" is not a single object\n";
+                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                    throw std::out_of_range(out.str());
+                }
+                if (! pi_)
+                {
+                    std::stringstream out;
+                    out << "\"" << name() << "\" internal error\n";
+                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                    throw std::out_of_range(out.str());
+                }            
+            }
+
+        /**
+            Initialization of a pointer.
+
+            @param  p New pointer to manage.
+        */
+
+        template <typename V>
+            root_ptr(root_ptr<V> const & p, char const * n, smart_ptr::detail::dynamic_cast_tag const & t)
+            : base(p, t)
+            , pi_(dynamic_cast<T *>(p.pi_))
+            , pn_(n)
+            {
+                if (p.base::base2::po_)
+                {
+                    std::stringstream out;
+                    out << "\"" << p.name() << "\" is not a single object\n";
+                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                    throw std::out_of_range(out.str());
+                }
+                if (! pi_)
+                {
+                    std::stringstream out;
+                    out << "\"" << name() << "\" internal error\n";
+                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                    throw std::out_of_range(out.str());
+                }            
+            }
+
+        char const * name() const
+        {
+            return pn_;
+        }
+
+        root_ptr & operator = (std::nullptr_t)
+        {
+            pi_ = nullptr;
+            
+            return static_cast<root_ptr &>(base::operator = (nullptr));
+        }
+        
+        template <typename V>
+            root_ptr & operator = (V const * p)
+            {
+                pi_ = const_cast<V *>(p);
+                
+                return * this;
+            }
+
+        template <typename V, typename PoolAllocator>
+            root_ptr & operator = (node<V, PoolAllocator> * p)
+            {
+                pi_ = p->element();
+                
+                return static_cast<root_ptr &>(base::template operator = <V, PoolAllocator>(p));
+            }
+
+        template <typename V, typename PoolAllocator>
+            root_ptr & operator = (node<std::vector<V>, PoolAllocator> * p)
+            {
+                pi_ = p->element()->data();
+                
+                return static_cast<root_ptr &>(base::template operator = <V, PoolAllocator>(p));
+            }
+
+            root_ptr & operator = (root_ptr const & p)
+            {
+                pi_ = p.pi_;
+                
+                return static_cast<root_ptr &>(base::template operator = <T>(p));
+            }
+
+        template <typename V>
+            T & operator [] (V n)
+            {
+                if (base::base1::po_)
+                {
+                    std::stringstream out;
+                    out << "\"" << name() << "\" is not a buffer\n";
+                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                    throw std::out_of_range(out.str());
+                }
+                if (base::base2::po_)
+                    if (pi_ + n < base::base2::po_->data() || base::base2::po_->data() + base::base2::po_->size() <= pi_ + n)
+                    {
+                        std::stringstream out;
+                        out << "\"" << name() << "\" (" << n << ") out of range [0, " << base::base2::po_->size() << "[\n";
+                        node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                        throw std::out_of_range(out.str());
+                    }
+                
+                return * (pi_ + n); 
+            }
+
+        template <typename V>
+            T const & operator [] (V n) const
+            {
+                if (base::base1::po_)
+                {
+                    std::stringstream out;
+                    out << "\"" << name() << "\" is not a buffer\n";
+                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                    throw std::out_of_range(out.str());
+                }
+                if (base::base2::po_)
+                    if (pi_ + n < base::base2::po_->data() || base::base2::po_->data() + base::base2::po_->size() <= pi_ + n)
+                    {
+                        std::stringstream out;
+                        out << "\"" << name() << "\" (" << n << ") out of range [0, " << base::base2::po_->size() << "[\n";
+                        node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                        throw std::out_of_range(out.str());
+                    }
+                
+                return * (pi_ + n); 
+            }
+
+        T & operator * () const
+        {
+            if (base::base2::po_)
+                if (pi_ < base::base2::po_->data() || base::base2::po_->data() + base::base2::po_->size() <= pi_)
+                {
+                    std::stringstream out;
+                    out << "\"" << name() << "\" (" << pi_ - base::base2::po_->data() << ") out of range [0, " << base::base2::po_->size() << "[\n";
+                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                    throw std::out_of_range(out.str());
+                }
+                
+            return * pi_;
+        }
+
+        T * operator -> () const
+        {
+            if (base::base2::po_)
+                if (pi_ < base::base2::po_->data() || base::base2::po_->data() + base::base2::po_->size() <= pi_)
+                {
+                    std::stringstream out;
+                    out << "\"" << name() << "\" (" << pi_ - base::base2::po_->data() << ") out of range [0, " << base::base2::po_->size() << "[\n";
+                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                    throw std::out_of_range(out.str());
+                }
+                
+            return pi_;
+        }
+        
+        operator bool () const
+        {
+            return pi_ != 0;
+        }
+
+        bool operator ! () const
+        {
+            return pi_ == 0;
+        }
+
+        operator T * () const
         {
             return pi_;
         }
+
+        root_ptr & operator ++ ()
+        {
+            if (base::base1::po_)
+            {
+                std::stringstream out;
+                out << "\"" << name() << "\" is not a buffer\n";
+                node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                throw std::out_of_range(out.str());
+            }
+                
+
+            return ++ pi_, * this;
+        }
+
+        root_ptr & operator -- ()
+        {
+            if (base::base1::po_)
+            {
+                std::stringstream out;
+                out << "\"" << name() << "\" is not a buffer\n";
+                node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                throw std::out_of_range(out.str());
+            }
+                
+            return -- pi_, * this;
+        }
+        
+        root_ptr operator ++ (int)
+        {
+            if (base::base1::po_)
+            {
+                std::stringstream out;
+                out << "\"" << name() << "\" is not a buffer\n";
+                node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                throw std::out_of_range(out.str());
+            }
+                
+            root_ptr temp(* this);
+            
+            return ++ pi_, temp;
+        }
+
+        root_ptr operator -- (int)
+        {
+            if (base::base1::po_)
+            {
+                std::stringstream out;
+                out << "\"" << name() << "\" is not a buffer\n";
+                node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                throw std::out_of_range(out.str());
+            }
+                
+            root_ptr temp(* this);
+            
+            return -- pi_, temp;
+        }
+        
+        size_t operator + (root_ptr const & o) const
+        {
+            return pi_ + o.pi_;
+        }
+
+        size_t operator - (root_ptr const & o) const
+        {
+            return pi_ - o.pi_;
+        }
+        
+        template <typename V>
+            root_ptr operator + (V i) const
+            {
+                if (base::base1::po_)
+                {
+                    std::stringstream out;
+                    out << "\"" << name() << "\" is not a buffer\n";
+                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                    throw std::out_of_range(out.str());
+                }
+                    
+                return root_ptr(base::proxy(), "", pi_ + i);
+            }
+
+        template <typename V>
+            root_ptr operator - (V i) const
+            {
+                if (base::base1::po_)
+                {
+                    std::stringstream out;
+                    out << "\"" << name() << "\" is not a buffer\n";
+                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                    throw std::out_of_range(out.str());
+                }
+                    
+                return root_ptr(base::proxy(), "", pi_ - i);
+            }
+
+        template <typename V>
+            root_ptr & operator += (V i)
+            {
+                if (base::base1::po_)
+                {
+                    std::stringstream out;
+                    out << "\"" << name() << "\" is not a buffer\n";
+                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                    throw std::out_of_range(out.str());
+                }
+                    
+                pi_ += i;
+                
+                return * this;
+            }
+
+        template <typename V>
+            root_ptr & operator -= (V i)
+            {
+                if (base::base1::po_)
+                {
+                    std::stringstream out;
+                    out << "\"" << name() << "\" is not a buffer\n";
+                    node_proxy::stacktrace(out, * node_proxy::top_node_proxy());
+                    throw std::out_of_range(out.str());
+                }
+                    
+                pi_ -= i;
+                
+                return * this;
+            }
         
         template <typename V>
             bool operator == (root_ptr<V> const & o) const
@@ -1400,6 +1482,16 @@ template <>
             bool operator != (root_ptr<V> const & o) const
             {
                 return pi_ != o.pi_;
+            }
+
+            bool operator == (root_ptr<std::nullptr_t> const & o) const
+            {
+                return pi_ == nullptr;
+            }
+
+            bool operator != (root_ptr<std::nullptr_t> const & o) const
+            {
+                return pi_ != nullptr;
             }
 
         template <typename V>
@@ -1428,18 +1520,18 @@ template <>
 
         friend std::ostream & operator << (std::ostream & os, root_ptr const & o) 
         {
-            return os << o.operator void const * ();
+            return os << o.operator T * ();
         }
         
         ~root_ptr()
         {
             //if (po_ && ! cyclic() && header()->use_count() == 1)
-            //    BOOSvoid_LOG_voidRIVIAL(info) << "\"" << pn_ << "\":" << boost::stacktrace::stacktrace(1, 1);
+            //    BOOST_LOG_TRIVIAL(info) << "\"" << pn_ << "\":" << boost::stacktrace::stacktrace(1, 1);
         }
     };
 
 
-template <typename T, bool = has_static_member_function___proxy<T, T const & (node_proxy &, T const &)>::value>
+template <typename T, bool = has_static_member_function___proxy<T, T const * (node_proxy &, T const *)>::value>
     struct construct
     {
         template <typename... Args>
@@ -1455,7 +1547,7 @@ template <typename T, size_t S>
         template <typename... Args>
             inline root_array<T, S> operator () (node_proxy & __y, char const * n, Args &&... args) const
             {
-                return root_array<T, S>(__y, std::forward<Args>(args)...);
+                return root_array<T, S>(__y, n, std::forward<Args>(args)...);
             }
     };
 
@@ -1477,16 +1569,6 @@ template <typename T>
             {
                 return T(__y, std::forward<Args>(args)...);
             }
-
-        inline T operator () (node_proxy & __y, char const * n, T & po) const
-        {
-            return T(po);
-        }
-        
-        inline T operator () (node_proxy & __y, char const * n, T const & po) const
-        {
-            return T(po);
-        }
     };
     
 template <typename T>
@@ -1538,14 +1620,13 @@ template <typename T, size_t S>
         {
         }
         
-        root_array(boost::node_proxy & __y) : base(__y, "", boost::create<T>()(__y, S))
+        root_array(boost::node_proxy & __y, char const * n) : base(__y, n, boost::create<T>()(__y, S))
         {
         }
     
-        template <typename... U>
-            root_array(boost::node_proxy & __y, U const &... pp) : base(__y, "", boost::create<T>().from_initializer(__y, std::initializer_list<T>{static_cast<T>(pp)...}))
-            {
-            }
+        root_array(boost::node_proxy & __y, char const * n, std::initializer_list<T> const & pp) : base(__y, n, boost::create<T>().from_initializer(__y, pp))
+        {
+        }
             
         ~root_array()
         {
