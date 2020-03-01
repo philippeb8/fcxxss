@@ -15,17 +15,15 @@ from libc.stdlib cimport malloc, free
 from local.libc.time cimport clock_gettime
 from local.libc.sys.resource cimport getrusage
 
-
 cdef struct list_node:
     list_node * p
-
 
 cdef int test():
     # Proper cyclic memory leaks management:
     cdef list_node * p
     cdef long ru_maxrss
     cdef long t
-    cdef long delta
+    #cdef long delta
     cdef int i = 0
     cdef timespec before, after;
     clock_gettime(CLOCK_REALTIME, & before);
@@ -39,18 +37,17 @@ cdef int test():
         p.p.p = <list_node *> malloc(sizeof(list_node))
         p.p.p.p = p
         
-        # stats
-        clock_gettime(CLOCK_REALTIME, & after);
-    
-        delta = <long> (((after.tv_sec - before.tv_sec) + (after.tv_nsec - before.tv_nsec) / 1000000000.0) * 1000000000.0);
-        
-        ru_maxrss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-        printf("Cython, %li, %f, %li\n", delta, (i * 1000000000.0 / <double> delta), ru_maxrss)
-        
         if (i) > 500000:
             break
 
-    return 0
+    # stats
+    clock_gettime(CLOCK_REALTIME, & after);
 
+    delta = <long> (((after.tv_sec - before.tv_sec) + (after.tv_nsec - before.tv_nsec) / 1000000000.0) * 1000000000.0);
+    
+    ru_maxrss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    printf("Cython, %li, %f, %li\n", delta, (i * 1000000000.0 / <double> delta), ru_maxrss)
+    
+    return 0
 
 test()

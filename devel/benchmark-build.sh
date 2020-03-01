@@ -11,7 +11,7 @@ clang++ -O2 benchmark.cpp -o benchmark.cpp.out
 
 $FCXXSS_HOME/bin/fcxxss.sh -O2 benchmark.cpp -o benchmark.cpp.fcxxss.out
 
-javac benchmark.javac
+javac benchmark.java
 
 $CYTHON_HOME/bin/cython benchmark.py --embed --cplus -o benchmark.py.cpp
 clang++ -O2 benchmark.py.cpp -isystem /usr/include/python2.7 -isystem $CYTHON_HOME/include/system -include Python.h -L /usr/lib/x86_64-linux-gnu -lpython2.7 -DCYTHON_UNUSED= -o benchmark.py.out

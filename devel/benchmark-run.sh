@@ -2,15 +2,15 @@
 
 set -x
 
-./benchmark.c.out > stats.c.txt
+./benchmark.c.out
 
-./benchmark.cpp.out > stats.cpp.txt
+./benchmark.cpp.out
 
-./benchmark.cpp.fcxxss.out > stats.cpp.fcxxss.txt
+./benchmark.cpp.fcxxss.out
 
-java -cp . Test > stats.java.txt
+java -cp . Test
 
-python benchmark.py > stats.py.txt
+python benchmark.py
 
-./benchmark.pyx.fcxxss.out > stats.pyx.fcxxss.txt
+./benchmark.pyx.fcxxss.out
 
